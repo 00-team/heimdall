@@ -133,7 +133,7 @@ struct Message {
 }
 
 fn main() -> std::io::Result<()> {
-    std::fs::remove_file(SOCK_PAHT)?;
+    let _ = std::fs::remove_file(SOCK_PAHT);
     let server = UnixDatagram::bind(SOCK_PAHT)?;
     std::fs::set_permissions(SOCK_PAHT, Permissions::from_mode(0o777))?;
     // server.set_nonblocking(true)?;
