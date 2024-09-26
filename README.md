@@ -2,11 +2,23 @@
 
 watchdog for websites
 
+## Roadmap
+
+### version 1
+
+1. simple
+1. do not store individual requests\
+   thus there is no pre date data
+1. average request processing time
+1. error rate (e.g. pre 100 `200` requests there are 5 `505` responses. 5% error rate)
+1. average request pre day
+1. average request size?
+
 ## Usage
 
 put this in your websites nginx config (requries upstream)
 
-```conf
+```nginx
 server {
     ...
 
@@ -27,7 +39,7 @@ server {
 
 put this in `/etc/nginx/nginx.conf`
 
-```conf
+```nginx
 http {
     ...
 
