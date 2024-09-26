@@ -117,7 +117,8 @@ fn main() -> std::io::Result<()> {
         println!("recv: {size}");
         println!(
             "[{size}] out: {}",
-            String::from_utf8(buf[..size].to_vec()).expect("invalid input")
+            String::from_utf8_lossy(&buf[..size])
+            // String::from_utf8(buf[..size].to_vec()).expect("invalid input")
         );
         // match serde_json::from_slice::<Message>(&buf[31..size]) {
         //     Ok(v) => println!("{v:#?}"),
