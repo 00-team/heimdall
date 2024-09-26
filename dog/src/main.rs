@@ -3,7 +3,7 @@ use std::{
     os::unix::{fs::PermissionsExt, net::UnixDatagram},
 };
 
-const SOCK_PAHT: &'static str = "/usr/share/nginx/socks/heimdall.log.sock";
+const SOCK_PAHT: &'static str = "/usr/share/nginx/socks/heimdall.dog.sock";
 
 #[allow(dead_code)]
 #[derive(Debug, serde::Deserialize)]
@@ -41,33 +41,24 @@ struct Message {
 }
 
 fn main() -> std::io::Result<()> {
+    dotenvy::from_path(".env").expect("could not read .env file");
     let _ = std::fs::remove_file(SOCK_PAHT);
     let server = UnixDatagram::bind(SOCK_PAHT)?;
     std::fs::set_permissions(SOCK_PAHT, Permissions::from_mode(0o777))?;
-    // server.set_nonblocking(true)?;
-    let mut buf = vec![0u8; 4096 * 2];
-    // let mut buf = String::with_capacity(4096);
+    server.set_nonblocking(true)?;
+    let mut buf = vec![0u8; 4096];
 
     loop {
         let size = server.recv(buf.as_mut_slice())?;
-        println!(
-            "[{size}] out: {}\n",
-            String::from_utf8_lossy(&buf[24..size])
-        );
+        if size == 0 {
+            continue;
+        }
         match serde_json::from_slice::<Message>(&buf[24..size]) {
             Ok(v) => println!("{v:#?}"),
-            Err(e) => println!("err: {e}"),
+            Err(e) => println!(
+                "err: {e}\n[{size}]: {}",
+                String::from_utf8_lossy(&buf[..size])
+            ),
         }
     }
-
-    // let mut buf = String::with_capacity(1024);
-
-    // if let Ok((mut stream, addr)) = server.accept() {
-    //     stream.read_to_string(&mut buf)?;
-    //     println!("stream: {addr:?}\n{buf}\n\n")
-    // } else {
-    //     println!("an error happend while accepting")
-    // }
-
-    // Ok(())
 }
