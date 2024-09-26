@@ -1,5 +1,6 @@
 use std::{
     fs::Permissions,
+    io::ErrorKind,
     os::unix::{fs::PermissionsExt, net::UnixDatagram},
 };
 
@@ -49,10 +50,11 @@ fn main() -> std::io::Result<()> {
     let mut buf = vec![0u8; 4096];
 
     loop {
-        let size = server.recv(buf.as_mut_slice())?;
-        if size == 0 {
-            continue;
-        }
+        let size = match server.recv(buf.as_mut_slice()) {
+            Ok(s) => s,
+            Err(e) if e.kind() == ErrorKind::WouldBlock => continue,
+            _ => unreachable!(),
+        };
         match serde_json::from_slice::<Message>(&buf[24..size]) {
             Ok(v) => println!("{v:#?}"),
             Err(e) => println!(
