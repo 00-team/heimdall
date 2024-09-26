@@ -1,0 +1,6 @@
+target/
+Cargo.lock
+main.db*
+.ignore*
+.env
+log
