@@ -9,7 +9,8 @@ WorkingDirectory=/x/heimdall/dog/
 EnvironmentFile=/x/heimdall/dog/.env
 ExecStart=/x/heimdall/dog/target/release/dog
 KillSignal=SIGQUIT
-StandardError=file:/x/heimdall/dog/log
+StandardError=file:/x/heimdall/dog/err
+StandardOutput=file:/x/heimdall/dog/out
 NotifyAccess=all
 
 [Install]
