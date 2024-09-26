@@ -114,6 +114,7 @@ fn main() -> std::io::Result<()> {
 
     loop {
         let size = server.recv(buf.as_mut_slice())?;
+        println!("recv: {size}");
         // println!(
         //     "[{size}] out: {}",
         //     String::from_utf8(buf[31..size].to_vec()).expect("invalid input")
