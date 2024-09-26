@@ -115,14 +115,14 @@ fn main() -> std::io::Result<()> {
     loop {
         let size = server.recv(buf.as_mut_slice())?;
         println!("recv: {size}");
-        // println!(
-        //     "[{size}] out: {}",
-        //     String::from_utf8(buf[31..size].to_vec()).expect("invalid input")
-        // );
-        match serde_json::from_slice::<Message>(&buf[31..size]) {
-            Ok(v) => println!("{v:#?}"),
-            Err(e) => println!("err: {e}"),
-        }
+        println!(
+            "[{size}] out: {}",
+            String::from_utf8(buf[..size].to_vec()).expect("invalid input")
+        );
+        // match serde_json::from_slice::<Message>(&buf[31..size]) {
+        //     Ok(v) => println!("{v:#?}"),
+        //     Err(e) => println!("err: {e}"),
+        // }
     }
 
     // let mut buf = String::with_capacity(1024);
