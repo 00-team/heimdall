@@ -13,6 +13,7 @@ watchdog for websites
 1. [ ] error rate (e.g. pre 100 `200` requests there are 5 `505` responses. 5% error rate)
 1. [ ] average request pre day
 1. [ ] average request size?
+1. [ ] message queue for each project. for verify code logs and ...
 
 ## Usage
 
