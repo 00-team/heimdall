@@ -52,9 +52,9 @@ fn main() -> std::io::Result<()> {
         let size = server.recv(buf.as_mut_slice())?;
         println!(
             "[{size}] out: {}\n",
-            String::from_utf8_lossy(&buf[31..size]) // String::from_utf8(buf[..size].to_vec()).expect("invalid input")
+            String::from_utf8_lossy(&buf[24..size])
         );
-        match serde_json::from_slice::<Message>(&buf[31..size]) {
+        match serde_json::from_slice::<Message>(&buf[24..size]) {
             Ok(v) => println!("{v:#?}"),
             Err(e) => println!("err: {e}"),
         }
