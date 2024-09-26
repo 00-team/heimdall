@@ -30,7 +30,7 @@ async fn openapi() -> impl Responder {
     doc.merge(api::verification::ApiDoc::openapi());
 
     let mut admin_doc = ApiDoc::openapi();
-    admin_doc.merge(admin::users::ApiDoc::openapi());
+    // admin_doc.merge(admin::users::ApiDoc::openapi());
 
     doc_add_prefix(&mut admin_doc, "/admin", false);
 
@@ -66,10 +66,11 @@ fn config_app(app: &mut ServiceConfig) {
     app.service(
         scope("/api")
             .service(api::user::router())
-            .service(api::verification::verification)
-            .service(
-                scope("/admin").service(admin::users::router()), // .service(admin::product_tag::router()),
-            ),
+            .service(api::verification::verification), // .service(
+                                                       //     scope("/admin")
+                                                       //         .service(admin::users::router())
+                                                       //         .service(admin::product_tag::router()),
+                                                       // ),
     );
 }
 
