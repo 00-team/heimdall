@@ -6,9 +6,9 @@ watchdog for websites
 
 ### version 1
 
-1. [ ] simple
-1. [ ] do not store individual requests\
-        thus there is no pre date data
+1. simple
+1. do not store individual requests\
+   thus there is no pre date data
 1. [ ] average request processing time
 1. [ ] error rate (e.g. pre 100 `200` requests there are 5 `505` responses. 5% error rate)
 1. [ ] average request pre day
