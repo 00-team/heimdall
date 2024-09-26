@@ -1,7 +1,7 @@
 use utoipa::{
     openapi::{
         self,
-        security::{Http, HttpAuthScheme, SecurityScheme},
+        security::{ApiKey, ApiKeyValue, SecurityScheme},
         Components, Content, Response, SecurityRequirement,
     },
     Modify, OpenApi,
@@ -20,20 +20,17 @@ impl Modify for AddSecurity {
         if let Some(schema) = openapi.components.as_mut() {
             schema.add_security_scheme(
                 "user_token",
-                SecurityScheme::Http(Http::new(HttpAuthScheme::Bearer)),
+                SecurityScheme::ApiKey(ApiKey::Header(ApiKeyValue::new("authorization"))),
             )
         }
 
-        openapi.security =
-            Some(vec![SecurityRequirement::new("user_token", [] as [&str; 0])]);
+        openapi.security = Some(vec![SecurityRequirement::new("user_token", [""; 0])]);
     }
 }
 
 pub struct UpdatePaths;
 
-pub fn doc_add_prefix(
-    openapi: &mut openapi::OpenApi, prefix: &str, update_tags: bool,
-) {
+pub fn doc_add_prefix(openapi: &mut openapi::OpenApi, prefix: &str, update_tags: bool) {
     openapi.paths.paths = openapi
         .paths
         .paths
@@ -44,8 +41,7 @@ pub fn doc_add_prefix(
             if update_tags {
                 value.operations.iter_mut().for_each(|(_, op)| {
                     if let Some(tags) = &openapi.tags {
-                        op.tags =
-                            Some(tags.iter().map(|t| t.name.clone()).collect());
+                        op.tags = Some(tags.iter().map(|t| t.name.clone()).collect());
                     }
                 });
             }
