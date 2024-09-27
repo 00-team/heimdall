@@ -1,40 +1,54 @@
-use super::{AppErr, AppErrForbidden};
+use super::{inner_deref, AppErr, AppErrForbidden};
 use crate::AppState;
 use actix_web::{dev::Payload, web::Data, FromRequest, HttpRequest};
 use serde::{Deserialize, Serialize};
-use std::{future::Future, ops, pin::Pin};
+use std::{future::Future, pin::Pin};
 use utoipa::ToSchema;
 
-enum Authorization {
+pub enum Authorization {
     User { id: i64, token: String },
+    Site { id: i64, token: String },
+}
+
+fn tokenizer<const N: usize>(value: Option<&str>) -> Result<[&str; N], AppErr> {
+    if value.is_none() {
+        return Err(AppErrForbidden("invalid authorization value"));
+    }
+    let result: [&str; N] = value
+        .unwrap()
+        .splitn(N, ':')
+        .collect::<Vec<&str>>()
+        .try_into()
+        .map_err(|_| AppErrForbidden("invalid authorization token"))?;
+
+    Ok(result)
 }
 
 impl TryFrom<&str> for Authorization {
     type Error = AppErr;
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         let mut tokens = value.splitn(2, ' ');
-        let key = tokens.next();
-        let tokens = tokens.next().and_then(|v| Some(v.splitn(2, ':')));
-
-        if key.is_none() || tokens.is_none() {
-            return Err(AppErrForbidden("invalid authorization"));
+        let key = tokens.next().and_then(|v| Some(v.to_lowercase()));
+        if key.is_none() {
+            return Err(AppErrForbidden("auth key was not found"));
         }
 
-        let key = key.unwrap().to_string();
-        let mut tokens = tokens.unwrap();
-        let id = tokens.next().and_then(|v| v.parse::<i64>().ok());
-        let token = tokens.next().and_then(|v| Some(v.to_string()));
-
-        if id.is_none() || token.is_none() {
-            return Err(AppErrForbidden("bad authorization"));
-        }
-
-        let id = id.unwrap();
-        let token = token.unwrap();
-
-        match key.as_str() {
-            "user" => Ok(Authorization::User { id, token }),
-            _ => Err(AppErrForbidden("unknown authorization")),
+        match key.unwrap().as_str() {
+            "user" => {
+                let [id, token] = tokenizer(tokens.next())?;
+                Ok(Authorization::User {
+                    id: id.parse()?,
+                    token: token.to_string(),
+                })
+            }
+            "site" => {
+                let [id, token] = tokenizer(tokens.next())?;
+                Ok(Authorization::Site {
+                    id: id.parse()?,
+                    token: token.to_string(),
+                })
+            }
+            key => Err(AppErrForbidden(&format!("unknown key in auth: {key}"))),
         }
     }
 }
@@ -87,7 +101,7 @@ impl FromRequest for User {
         // let token = BearerAuth::from_request(req, pl);
 
         Box::pin(async move {
-            let mut user = match auth? {
+            let user = match auth? {
                 Authorization::User { id, token } => {
                     sqlx::query_as! {
                         User,
@@ -97,6 +111,7 @@ impl FromRequest for User {
                     .fetch_one(&pool)
                     .await?
                 }
+                _ => return Err(AppErrForbidden("invalid auth")),
             };
 
             Ok(user)
@@ -105,17 +120,7 @@ impl FromRequest for User {
 }
 
 pub struct Admin(pub User);
-impl ops::Deref for Admin {
-    type Target = User;
-    fn deref(&self) -> &User {
-        &self.0
-    }
-}
-impl ops::DerefMut for Admin {
-    fn deref_mut(&mut self) -> &mut User {
-        &mut self.0
-    }
-}
+inner_deref!(Admin, User);
 
 impl FromRequest for Admin {
     type Error = AppErr;
