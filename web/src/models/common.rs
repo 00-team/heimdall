@@ -16,7 +16,7 @@ pub struct ListInput {
     pub page: u32,
 }
 
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize, Default, Clone)]
 pub struct JsonStr<T>(pub T);
 
 impl<T> ops::Deref for JsonStr<T> {

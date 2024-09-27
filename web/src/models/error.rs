@@ -8,6 +8,7 @@ use std::{
     fmt,
     num::{ParseFloatError, ParseIntError},
     string::FromUtf8Error,
+    sync::PoisonError,
 };
 use tokio::io;
 use utoipa::ToSchema;
@@ -81,6 +82,14 @@ impl From<actix_web::error::Error> for AppErr {
             subject: "Err".to_string(),
             content: Some(value.to_string()),
         }
+    }
+}
+
+impl<T> From<PoisonError<T>> for AppErr {
+    fn from(value: PoisonError<T>) -> Self {
+        let value = value.to_string();
+        log::error!("err poision: {}", value);
+        Self { status: 500, subject: value, content: None }
     }
 }
 

@@ -1,7 +1,7 @@
 use actix_web::web::{Data, Json};
 use actix_web::{post, Scope};
 use serde::Deserialize;
-use utoipa::OpenApi;
+use utoipa::{OpenApi, ToSchema};
 
 use crate::docs::UpdatePaths;
 use crate::models::user::Admin;
@@ -12,13 +12,13 @@ use crate::AppState;
 #[openapi(
     tags((name = "admin::sites")),
     paths(add),
-    components(schemas(Site)),
+    components(schemas(Site, SitesAddBody)),
     servers((url = "/sites")),
     modifiers(&UpdatePaths)
 )]
 pub struct ApiDoc;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 struct SitesAddBody {
     name: String,
 }
@@ -34,21 +34,21 @@ async fn add(
     _: Admin, body: Json<SitesAddBody>, state: Data<AppState>,
 ) -> Response<Site> {
     Site::verify_name(&body.name)?;
-    let mut site = Site {
-        id: 0,
-        name: body.name.clone(),
-        latest_request: 0,
-        total_requests: 0,
-        token: None,
-    };
+
     let result = sqlx::query! {
         "insert into sites(name) values(?)",
-        site.name
+        body.name
     }
     .execute(&state.sql)
     .await?;
 
-    site.id = result.last_insert_rowid();
+    let site = Site {
+        id: result.last_insert_rowid(),
+        name: body.name.clone(),
+        ..Default::default()
+    };
+    let sites = state.sites.lock()?;
+    sites.insert(site.id, site);
 
     Ok(Json(site))
 }

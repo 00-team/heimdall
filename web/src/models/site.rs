@@ -1,4 +1,4 @@
-use std::{future::Future, pin::Pin};
+use std::{collections::HashMap, future::Future, pin::Pin};
 
 use actix_http::Payload;
 use actix_web::{
@@ -6,21 +6,36 @@ use actix_web::{
     FromRequest, HttpRequest,
 };
 use serde::{Deserialize, Serialize};
+use sqlx::prelude::FromRow;
 use utoipa::ToSchema;
 
 use crate::{config::Config, AppState};
 
 use super::{
-    inner_deref, user::Authorization, AppErr, AppErrBadRequest, AppErrForbidden,
+    inner_deref, user::Authorization, AppErr, AppErrBadRequest,
+    AppErrForbidden, JsonStr,
 };
 
-#[derive(Debug, Serialize, Deserialize, sqlx::FromRow, ToSchema, Clone)]
+#[derive(Debug, Serialize, Deserialize, FromRow, ToSchema, Clone, Default)]
 pub struct Site {
     pub id: i64,
     pub name: String,
     pub latest_request: i64,
+    pub latest_ping: i64,
     pub total_requests: i64,
+    pub total_requests_time: i64,
+    pub total_requests_size: i64,
+    pub status: JsonStr<HashMap<u16, u64>>,
     pub token: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, FromRow, ToSchema, Clone, Default)]
+pub struct SiteMessage {
+    pub id: i64,
+    pub site: i64,
+    pub timestamp: i64,
+    pub text: String,
+    pub tag: String,
 }
 
 impl Site {
