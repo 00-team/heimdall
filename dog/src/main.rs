@@ -61,7 +61,7 @@ fn main() -> std::io::Result<()> {
         }
 
         if latest_ping.elapsed().as_secs() >= 60 {
-            client.post(API_PING).send().unwrap();
+            client.post(API_PING).body("").send().unwrap();
             latest_ping = Instant::now();
         }
 
