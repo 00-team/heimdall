@@ -51,6 +51,11 @@ fn main() -> std::io::Result<()> {
     let client = client_init();
 
     loop {
+        if latest_ping.elapsed().as_secs() >= 20 {
+            client.post(API_PING).send().unwrap();
+            latest_ping = Instant::now();
+        }
+
         if latest_request.elapsed().as_secs() >= 10 && dump.total != 0 {
             let res = client.post(API_DUMP).json(&dump).send().unwrap();
             if res.status() != reqwest::StatusCode::OK {
@@ -58,11 +63,6 @@ fn main() -> std::io::Result<()> {
             }
             dump = Dump::default();
             latest_request = Instant::now();
-        }
-
-        if latest_ping.elapsed().as_secs() >= 60 {
-            client.post(API_PING).send().unwrap();
-            latest_ping = Instant::now();
         }
 
         let size = match server.recv(buf.as_mut_slice()) {
