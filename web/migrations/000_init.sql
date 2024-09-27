@@ -13,7 +13,6 @@ create table if not exists sites (
     latest_ping integer not null default 0,
     total_requests integer not null default 0,
     total_requests_time integer not null default 0,
-    total_requests_size integer not null default 0,
     status text not null default "{}", -- {"400": 100, "200": 2000}
     token text
 );

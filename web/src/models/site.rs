@@ -21,7 +21,6 @@ pub struct Site {
     pub latest_ping: i64,
     pub total_requests: i64,
     pub total_requests_time: i64,
-    pub total_requests_size: i64,
     #[schema(value_type = HashMap<u16, u64>)]
     pub status: JsonStr<HashMap<u16, u64>>,
     pub token: Option<String>,

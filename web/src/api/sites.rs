@@ -70,20 +70,17 @@ async fn dump(
 
     site.total_requests += body.total;
     site.total_requests_time += body.total_time;
-    site.total_requests_size += body.total_size;
     site.latest_request = utils::now();
 
     sqlx::query! {"
         update sites set
         total_requests = ?,
         total_requests_time = ?,
-        total_requests_size = ?,
         latest_request = ?
         where id = ?
     ",
         site.total_requests,
         site.total_requests_time,
-        site.total_requests_size,
         site.latest_request,
         site.id
     }
