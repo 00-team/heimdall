@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::prelude::FromRow;
 use utoipa::ToSchema;
 
-use crate::{config::Config, AppState};
+use crate::{config::Config, models::AppErrNotFound, AppState};
 
 use super::{
     inner_deref, user::Authorization, AppErr, AppErrBadRequest,
@@ -62,21 +62,16 @@ impl FromRequest for Site {
         struct Sid {
             site_id: i64,
         }
-        let state = req.app_data::<Data<AppState>>().unwrap();
-        let pool = state.sql.clone();
+        let state = req.app_data::<Data<AppState>>().unwrap().clone();
         let path = Path::<Sid>::extract(req);
 
         Box::pin(async move {
-            let path = path.await?;
-            let result = sqlx::query_as! {
-                Site,
-                "select * from sites where id = ?",
-                path.site_id
+            let sites = state.sites.lock().await;
+            if let Some(site) = sites.get(&path.await?.site_id) {
+                Ok(site.clone())
+            } else {
+                Err(AppErrNotFound("no site was found"))
             }
-            .fetch_one(&pool)
-            .await?;
-
-            Ok(result)
         })
     }
 }
@@ -89,22 +84,19 @@ impl FromRequest for SiteAuth {
     type Future = Pin<Box<dyn Future<Output = Result<Self, Self::Error>>>>;
 
     fn from_request(req: &HttpRequest, _pl: &mut Payload) -> Self::Future {
-        let state = req.app_data::<Data<AppState>>().unwrap();
-        let pool = state.sql.clone();
+        let state = req.app_data::<Data<AppState>>().unwrap().clone();
         let auth = Authorization::try_from(req);
-        // let path = Path::<PP>::extract(req);
 
         Box::pin(async move {
             if let Authorization::Site { id, token } = auth? {
-                let result = sqlx::query_as! {
-                    Site,
-                    "select * from sites where id = ? AND token = ?",
-                    id, token
+                let sites = state.sites.lock().await;
+                if let Some(site) = sites.get(&id) {
+                    if site.token == Some(token) {
+                        return Ok(SiteAuth(site.clone()));
+                    }
                 }
-                .fetch_one(&pool)
-                .await?;
 
-                return Ok(SiteAuth(result));
+                return Err(AppErrNotFound("no site was found"));
             }
 
             Err(AppErrForbidden("invalid site auth"))

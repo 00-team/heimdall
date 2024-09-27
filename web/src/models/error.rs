@@ -134,4 +134,4 @@ macro_rules! error_helper {
 
 error_helper!(AppErrBadRequest, BAD_REQUEST, "bad request");
 error_helper!(AppErrForbidden, FORBIDDEN, "forbidden");
-// error_helper!(AppErrNotFound, NOT_FOUND, "not found");
+error_helper!(AppErrNotFound, NOT_FOUND, "not found");
