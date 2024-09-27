@@ -62,6 +62,7 @@ struct SitesUpdateBody {
 
 #[utoipa::path(
     patch,
+    params(("site_id" = i64, Path, example = 1)),
     request_body = SitesUpdateBody,
     responses((status = 200, body = Site))
 )]
