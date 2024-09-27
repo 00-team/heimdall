@@ -3,10 +3,11 @@ Cargo.lock
 main.db*
 .ignore*
 .env
+*.env
 log
+*.log
 dog/err
 dog/out
-*.env
 package-lock.json
 node_modules/
 dist/
