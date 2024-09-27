@@ -82,7 +82,7 @@ fn config_app(app: &mut ServiceConfig) {
                 read_to_string("dist/index.html").expect("no index.html"),
             ),
         ))
-    })
+    });
 }
 
 #[cfg(unix)]
