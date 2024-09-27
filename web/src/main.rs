@@ -96,13 +96,12 @@ async fn main() -> std::io::Result<()> {
     .map(|s| (s.id, s.clone()))
     .collect::<HashMap<_, _>>();
 
+    let data = Data::new(AppState { sql: pool, sites: Mutex::new(sites) });
+
     let server = HttpServer::new(move || {
         App::new()
             .wrap(middleware::Logger::new("%s %r %Ts"))
-            .app_data(Data::new(AppState {
-                sql: pool.clone(),
-                sites: Mutex::new(sites.clone()),
-            }))
+            .app_data(data.clone())
             .configure(config_app)
     });
 

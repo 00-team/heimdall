@@ -1,18 +1,19 @@
 use actix_web::web::{Data, Json};
-use actix_web::{patch, post, Scope};
+use actix_web::{delete, patch, post, HttpResponse, Scope};
 use serde::Deserialize;
 use utoipa::{OpenApi, ToSchema};
 
 use crate::config::Config;
 use crate::docs::UpdatePaths;
 use crate::models::user::Admin;
+use crate::models::AppErr;
 use crate::models::{site::Site, Response};
 use crate::{utils, AppState};
 
 #[derive(OpenApi)]
 #[openapi(
     tags((name = "admin::sites")),
-    paths(add, update),
+    paths(add, update, del),
     components(schemas(Site, SitesAddBody, SitesUpdateBody)),
     servers((url = "/sites")),
     modifiers(&UpdatePaths)
@@ -94,6 +95,29 @@ async fn update(
     Ok(Json(site))
 }
 
+#[utoipa::path(
+    delete,
+    params(("site_id" = i64, Path, example = 1)),
+    responses((status = 200, body = Site))
+)]
+/// Delete
+#[delete("/{site_id}/")]
+async fn del(
+    _: Admin, site: Site, state: Data<AppState>,
+) -> Result<HttpResponse, AppErr> {
+    sqlx::query! {
+        "delete from sites where id = ?",
+        site.id
+    }
+    .execute(&state.sql)
+    .await?;
+
+    let mut sites = state.sites.lock().await;
+    sites.remove(&site.id);
+
+    Ok(HttpResponse::Ok().finish())
+}
+
 pub fn router() -> Scope {
-    Scope::new("/sites").service(add).service(update)
+    Scope::new("/sites").service(add).service(update).service(del)
 }
