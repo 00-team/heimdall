@@ -1,7 +1,6 @@
 use actix_http::header::ToStrError;
 use actix_web::{
-    body::BoxBody, error::PayloadError, http::StatusCode, HttpResponse,
-    ResponseError,
+    body::BoxBody, error::PayloadError, http::StatusCode, HttpResponse, ResponseError,
 };
 use serde::{Deserialize, Serialize};
 use std::{
@@ -21,12 +20,18 @@ pub struct AppErr {
 
 impl AppErr {
     pub fn new(status: u16, subject: &str) -> Self {
-        Self { status, subject: subject.to_string(), content: None }
+        Self {
+            status,
+            subject: subject.to_string(),
+            content: None,
+        }
     }
 
     pub fn default() -> Self {
         Self {
-            status: 500, subject: "خطای سیستم".to_string(), content: None
+            status: 500,
+            subject: "server error".to_string(),
+            content: None,
         }
     }
 }
@@ -39,8 +44,7 @@ impl fmt::Display for AppErr {
 
 impl ResponseError for AppErr {
     fn status_code(&self) -> StatusCode {
-        StatusCode::from_u16(self.status)
-            .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR)
+        StatusCode::from_u16(self.status).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR)
     }
 
     fn error_response(&self) -> HttpResponse<BoxBody> {
@@ -53,13 +57,13 @@ impl From<sqlx::Error> for AppErr {
         match value {
             sqlx::Error::RowNotFound => Self {
                 status: 404,
-                subject: "یافت نشد".to_string(),
+                subject: "not found".to_string(),
                 content: None,
             },
             sqlx::Error::Database(e) => match e.code() {
                 Some(c) if c == "2067" => Self {
                     status: 400,
-                    subject: "مورد مشابهی پیدا شد".to_string(),
+                    subject: "a similar item was found".to_string(),
                     content: None,
                 },
                 _ => Self::default(),
@@ -80,7 +84,7 @@ impl From<actix_web::error::Error> for AppErr {
         let r = value.error_response();
         Self {
             status: r.status().as_u16(),
-            subject: "خطا".to_string(),
+            subject: "Err".to_string(),
             content: Some(value.to_string()),
         }
     }
@@ -125,6 +129,6 @@ macro_rules! error_helper {
     };
 }
 
-error_helper!(AppErrBadRequest, BAD_REQUEST, "درخواست بد");
-error_helper!(AppErrForbidden, FORBIDDEN, "ممنوع");
-error_helper!(AppErrNotFound, NOT_FOUND, "پیدا نشد");
+error_helper!(AppErrBadRequest, BAD_REQUEST, "bad request");
+error_helper!(AppErrForbidden, FORBIDDEN, "forbidden");
+// error_helper!(AppErrNotFound, NOT_FOUND, "not found");

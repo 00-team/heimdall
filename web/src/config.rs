@@ -17,7 +17,7 @@ impl Config {
     pub const TOKEN_ABC: &'static [u8] =
         b"!@#$%^&*_+abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*_+";
     pub const SLUG_ABC: &'static [u8] =
-        b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_";
+        b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.";
 }
 
 pub fn config() -> &'static Config {

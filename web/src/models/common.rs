@@ -44,7 +44,8 @@ impl<T: Serialize> Serialize for JsonStr<T> {
 
 impl<'q, T: Serialize> sqlx::Encode<'q, Sqlite> for JsonStr<T> {
     fn encode_by_ref(
-        &self, buf: &mut <Sqlite as sqlx::Database>::ArgumentBuffer<'q>,
+        &self,
+        buf: &mut <Sqlite as sqlx::Database>::ArgumentBuffer<'q>,
     ) -> Result<IsNull, sqlx::error::BoxDynError> {
         let result = serde_json::to_string(&self.0).unwrap_or("{}".to_string());
         buf.push(SqliteArgumentValue::Text(result.into()));
@@ -102,18 +103,32 @@ macro_rules! sql_enum {
     };
 }
 
+macro_rules! inner_deref {
+    ($parent:ident, $child:ident) => {
+        impl std::ops::Deref for $parent {
+            type Target = $child;
+            fn deref(&self) -> &$child {
+                &self.0
+            }
+        }
+        impl std::ops::DerefMut for $parent {
+            fn deref_mut(&mut self) -> &mut $child {
+                &mut self.0
+            }
+        }
+    };
+}
+
 macro_rules! from_request {
     ($name:ident, $table:literal) => {
         impl actix_web::FromRequest for $name {
             type Error = crate::models::AppErr;
-            type Future = std::pin::Pin<
-                Box<
-                    dyn std::future::Future<Output = Result<Self, Self::Error>>,
-                >,
-            >;
+            type Future =
+                std::pin::Pin<Box<dyn std::future::Future<Output = Result<Self, Self::Error>>>>;
 
             fn from_request(
-                req: &actix_web::HttpRequest, _: &mut actix_web::dev::Payload,
+                req: &actix_web::HttpRequest,
+                _: &mut actix_web::dev::Payload,
             ) -> Self::Future {
                 let path = actix_web::web::Path::<(i64,)>::extract(req);
                 let state = req
@@ -139,4 +154,5 @@ macro_rules! from_request {
 }
 
 pub(crate) use from_request;
+pub(crate) use inner_deref;
 pub(crate) use sql_enum;

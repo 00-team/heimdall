@@ -1,4 +1,3 @@
-// pub mod order;
-// pub mod product;
+pub mod sites;
 pub mod user;
 pub mod verification;
