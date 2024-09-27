@@ -9,7 +9,8 @@ use std::{
 use serde::Serialize;
 use serde_tuple::Deserialize_tuple;
 
-const SOCK_PAHT: &'static str = "/usr/share/nginx/socks/heimdall.dog.sock";
+const API_DUMP: &str = "https://heimdall.00-team.org/api/sites/dump/";
+const API_PING: &str = "https://heimdall.00-team.org/api/sites/ping/";
 
 #[derive(Debug, Deserialize_tuple)]
 struct Message {
@@ -23,41 +24,43 @@ struct Dump {
     total_time: u64,
 }
 
+macro_rules! evar {
+    ($name:literal) => {
+        env::var($name).expect(concat!($name, "was not found in .env"))
+    };
+}
+
 fn main() -> std::io::Result<()> {
     dotenvy::from_path(".env").expect("could not read .env file");
-    let _ = std::fs::remove_file(SOCK_PAHT);
-    let server = UnixDatagram::bind(SOCK_PAHT)?;
-    std::fs::set_permissions(SOCK_PAHT, Permissions::from_mode(0o777))?;
+    let sock_path = format!(
+        "/usr/share/nginx/socks/heimdall.dog.{}.sock",
+        evar!("HEIMDALL_SITE")
+    );
+
+    let _ = std::fs::remove_file(&sock_path);
+    let server = UnixDatagram::bind(&sock_path)?;
+    std::fs::set_permissions(&sock_path, Permissions::from_mode(0o777))?;
     server.set_nonblocking(true)?;
     let mut buf = vec![0u8; 512];
     let mut dump = Dump::default();
-    let mut last_update = Instant::now();
+    let mut latest_request = Instant::now();
+    let mut latest_ping = Instant::now();
 
-    let mut headers = reqwest::header::HeaderMap::new();
-    headers.insert(
-        "authorization",
-        env::var("HEIMDALL_TOKEN")
-            .expect(".env: HEIMDALL_TOKEN")
-            .parse()
-            .expect("invalid header value"),
-    );
-    let client = reqwest::blocking::ClientBuilder::new()
-        .default_headers(headers)
-        .build()
-        .expect("could not build the client");
-    // client.post("hi").header(key, value)
+    let client = client_init();
 
     loop {
-        if last_update.elapsed().as_secs() >= 10 {
-            let res = client
-                .post("https://heimdall.00-team.org/api/sites/dump/")
-                .json(&dump)
-                .send()
-                .expect("could not send the dump");
-
-            println!("res status: {}", res.status());
+        if latest_request.elapsed().as_secs() >= 10 && dump.total != 0 {
+            let res = client.post(API_DUMP).json(&dump).send().unwrap();
+            if res.status() != reqwest::StatusCode::OK {
+                println!("err: {:?}", res.json::<serde_json::Value>());
+            }
             dump = Dump::default();
-            last_update = Instant::now();
+            latest_request = Instant::now();
+        }
+
+        if latest_ping.elapsed().as_secs() >= 60 {
+            client.post(API_PING).send().unwrap();
+            latest_ping = Instant::now();
         }
 
         let size = match server.recv(buf.as_mut_slice()) {
@@ -67,7 +70,6 @@ fn main() -> std::io::Result<()> {
         };
         match serde_json::from_slice::<Message>(&buf[24..size]) {
             Ok(msg) => {
-                println!("msg: {msg:#?}");
                 dump.total += 1;
                 dump.total_time += (msg.upstream_response_time * 1000.0) as u64;
             }
@@ -77,4 +79,16 @@ fn main() -> std::io::Result<()> {
             ),
         }
     }
+}
+
+fn client_init() -> reqwest::blocking::Client {
+    let mut headers = reqwest::header::HeaderMap::new();
+    headers.insert(
+        "authorization",
+        evar!("HEIMDALL_TOKEN").parse().expect("bad token"),
+    );
+    reqwest::blocking::ClientBuilder::new()
+        .default_headers(headers)
+        .build()
+        .expect("could not build the client")
 }
