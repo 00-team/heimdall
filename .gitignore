@@ -6,3 +6,8 @@ main.db*
 log
 dog/err
 dog/out
+*.env
+package-lock.json
+node_modules/
+dist/
+web/record/

@@ -2,6 +2,7 @@ use crate::config::evar;
 use crate::config::Config;
 use crate::docs::{doc_add_prefix, ApiDoc};
 use actix_files as af;
+use actix_web::dev::ServiceRequest;
 use actix_web::{
     get,
     http::header::ContentType,
@@ -12,6 +13,7 @@ use actix_web::{
 use models::site::Site;
 use sqlx::{Pool, Sqlite, SqlitePool};
 use std::collections::HashMap;
+use std::fs::read_to_string;
 use tokio::sync::Mutex;
 use utoipa::OpenApi;
 
@@ -74,6 +76,13 @@ fn config_app(app: &mut ServiceConfig) {
             .service(api::sites::router())
             .service(scope("/admin").service(admin::sites::router())),
     );
+    app.default_service(|r: ServiceRequest| {
+        actix_utils::future::ok(r.into_response(
+            HttpResponse::Ok().content_type(ContentType::html()).body(
+                read_to_string("dist/index.html").expect("no index.html"),
+            ),
+        ))
+    })
 }
 
 #[cfg(unix)]

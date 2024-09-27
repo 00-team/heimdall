@@ -1,0 +1,27 @@
+{
+    "name": "heimdall",
+    "module": "index.ts",
+    "type": "module",
+    "version": "0.1.0",
+    "description": "",
+    "main": "index.js",
+    "author": "00-team",
+    "license": "AGPL-3",
+    "scripts": {
+        "start": "vite",
+        "build": "vite build",
+        "build:dev": "vite build --mode development"
+    },
+    "dependencies": {
+        "@solidjs/router": "^0.13.2",
+        "solid-js": "^1.8.16",
+        "vite-tsconfig-paths": "^4.3.2"
+    },
+    "devDependencies": {
+        "@trivago/prettier-plugin-sort-imports": "^4.3.0",
+        "sass": "^1.75.0",
+        "typescript": "^5.4.5",
+        "vite": "^5.2.9",
+        "vite-plugin-solid": "^2.10.2"
+    }
+}

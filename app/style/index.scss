@@ -1,0 +1,197 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    color-scheme: dark;
+    background-color: var(--bg-2);
+    color: var(--white);
+
+    font-family: 'Zan', sans-serif;
+    font-weight: 400;
+
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+
+    .root,
+    .root main {
+        width: 100%;
+        height: 100%;
+    }
+
+    svg {
+        width: 24px;
+        height: 24px;
+    }
+
+    code {
+        // background-color: var(--slate-1);
+        background-color: var(--black);
+        padding: 0.1rem 0.2rem;
+        border-radius: var(--radius);
+        font-size: 16px;
+    }
+
+    a {
+        color: var(--blue-9);
+        text-decoration: none;
+    }
+
+    img {
+        user-select: none;
+    }
+
+    label {
+        user-select: none;
+    }
+}
+
+textarea.styled {
+    background-color: var(--bg-1);
+    border: 2px solid var(--fg-2);
+    font-size: 18px;
+    border-radius: var(--radius);
+    padding: 0.25rem;
+    color: var(--white);
+
+    &:focus {
+        border-color: var(--fg-3);
+        outline: 0;
+    }
+}
+
+input.styled {
+    background-color: var(--bg-1);
+    border: 2px solid var(--fg-2);
+    font-size: 18px;
+    border-radius: var(--radius);
+    padding: 0.25rem;
+    color: var(--white);
+
+    &:focus {
+        border-color: var(--fg-3);
+        outline: 0;
+    }
+}
+
+button.styled {
+    background-color: var(--bg-2);
+    color: var(--white);
+    border: 2px;
+    border-color: var(--fg-2);
+    border-style: solid;
+    border-radius: var(--radius);
+    font-size: 18px;
+    font-family: 'Zan';
+    cursor: pointer;
+    padding: 0.25rem;
+    transition: 220ms ease-in-out;
+    transition-property: border-color, background-color;
+
+    --color-1: var(--fg-1);
+    --color-2: var(--fg-2);
+
+    &.icon {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: transparent;
+        width: 32px;
+        height: 32px;
+        border: 0;
+    }
+
+    &.trash,
+    &.remove {
+        --color-1: var(--red);
+        --color-2: var(--red);
+    }
+
+    &:hover {
+        border-color: var(--color-1);
+    }
+
+    &:not(&.icon):active {
+        background-color: var(--color-2);
+        border-color: var(--color-2);
+    }
+
+    &:focus {
+        outline: 0;
+    }
+
+    &:disabled {
+        pointer-events: none;
+        opacity: 0.6;
+        border: 2px solid var(--bg-3);
+        background-color: var(--bg-1);
+        outline: 0;
+        cursor: default;
+    }
+}
+
+:root {
+    --radius: 0.25rem;
+
+    --en: 'Jakarta';
+
+    --white: #f2f2f2;
+    --black: #040404;
+    --red: #e20338;
+    --blue: #51eaff;
+    --green: #00dc7d;
+    --yellow: #ffd600;
+
+    --fg-1: #494a4c;
+    --fg-2: #50a7ea;
+    --fg-3: #dab475;
+    --bg-1: #040404;
+    --bg-2: #040404;
+    --bg-3: #555555;
+
+    // --fg-1: #494a4c;
+    // --fg-2: #d9af65;
+    // --fg-3: #dab475;
+    // --bg-1: #1c1c1c;
+    // --bg-2: #333333;
+    // --bg-3: #555555;
+    // --bg-2: #131862;
+    // --bg-3: #2e4482;
+    // --bg-4: #546bab;
+    // --bg-5: #87889c;
+
+    --scroll-bg: var(--bg-1);
+    --scorll-fg: var(--fg-2);
+    --scorll-hover: var(--fg-3);
+    --scorll-active: var(--fg-3);
+
+    --selection-fg: var(--black);
+    --selection-bg: var(--white);
+}
+
+::-webkit-scrollbar {
+    width: 9px;
+    background-color: var(--scroll-bg);
+}
+
+::-webkit-scrollbar-thumb {
+    border-radius: 10px;
+    border: 2px solid var(--scroll-bg);
+    background-color: var(--scorll-fg);
+
+    &:hover {
+        background-color: var(--scorll-hover);
+    }
+
+    &:active {
+        background-color: var(--scorll-active);
+    }
+}
+
+::selection {
+    background-color: var(--selection-bg);
+    color: var(--selection-fg);
+}
