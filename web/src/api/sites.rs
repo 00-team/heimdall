@@ -45,7 +45,6 @@ async fn list(
 struct SiteDumpBody {
     total: i64,
     total_time: i64,
-    total_size: i64,
 }
 
 #[utoipa::path(

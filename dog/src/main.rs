@@ -1,44 +1,26 @@
 use std::{
+    env,
     fs::Permissions,
     io::ErrorKind,
     os::unix::{fs::PermissionsExt, net::UnixDatagram},
+    time::Instant,
 };
+
+use serde::Serialize;
+use serde_tuple::Deserialize_tuple;
 
 const SOCK_PAHT: &'static str = "/usr/share/nginx/socks/heimdall.dog.sock";
 
-#[allow(dead_code)]
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize_tuple)]
 struct Message {
-    bytes_sent: u32,
-    connection: u32,
-    connection_requests: u32,
-    connections_active: u32,
-    connections_waiting: u32,
-    content_type: String,
-    hostname: String,
-    https: String,
-    limit_rate: String,
-    msec: f64,
-    nginx_version: String,
-    realip_remote_addr: String,
-    remote_addr: String,
-    request: String,
-    request_completion: String,
-    request_length: u32,
-    request_method: String,
-    request_time: f64,
-    request_uri: String,
-    scheme: String,
-    server_addr: String,
-    server_name: String,
-    server_port: u16,
-    server_protocol: String,
-    ssl_protocol: String,
-    status: u16,
-    upstream_bytes_received: u32,
-    upstream_header_time: f64,
-    upstream_response_length: u32,
+    _status: u16,
     upstream_response_time: f64,
+}
+
+#[derive(Serialize, Default)]
+struct Dump {
+    total: u64,
+    total_time: u64,
 }
 
 fn main() -> std::io::Result<()> {
@@ -47,16 +29,48 @@ fn main() -> std::io::Result<()> {
     let server = UnixDatagram::bind(SOCK_PAHT)?;
     std::fs::set_permissions(SOCK_PAHT, Permissions::from_mode(0o777))?;
     server.set_nonblocking(true)?;
-    let mut buf = vec![0u8; 4096];
+    let mut buf = vec![0u8; 512];
+    let mut dump = Dump::default();
+    let mut last_update = Instant::now();
+
+    let mut headers = reqwest::header::HeaderMap::new();
+    headers.insert(
+        "authorization",
+        env::var("HEIMDALL_TOKEN")
+            .expect(".env: HEIMDALL_TOKEN")
+            .parse()
+            .expect("invalid header value"),
+    );
+    let client = reqwest::blocking::ClientBuilder::new()
+        .default_headers(headers)
+        .build()
+        .expect("could not build the client");
+    // client.post("hi").header(key, value)
 
     loop {
+        if last_update.elapsed().as_secs() >= 10 {
+            let res = client
+                .post("https://heimdall.00-team.org/api/sites/dump/")
+                .json(&dump)
+                .send()
+                .expect("could not send the dump");
+
+            println!("res status: {}", res.status());
+            dump = Dump::default();
+            last_update = Instant::now();
+        }
+
         let size = match server.recv(buf.as_mut_slice()) {
             Ok(s) => s,
             Err(e) if e.kind() == ErrorKind::WouldBlock => continue,
             _ => unreachable!(),
         };
         match serde_json::from_slice::<Message>(&buf[24..size]) {
-            Ok(v) => println!("{v:#?}"),
+            Ok(msg) => {
+                println!("msg: {msg:#?}");
+                dump.total += 1;
+                dump.total_time += (msg.upstream_response_time * 1000.0) as u64;
+            }
             Err(e) => println!(
                 "err: {e}\n[{size}]: {}",
                 String::from_utf8_lossy(&buf[..size])
