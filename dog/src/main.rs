@@ -31,7 +31,9 @@ macro_rules! evar {
 }
 
 fn main() -> std::io::Result<()> {
+    #[cfg(debug_assertions)]
     dotenvy::from_path(".env").expect("could not read .env file");
+
     let sock_path = format!(
         "/usr/share/nginx/socks/heimdall.dog.{}.sock",
         evar!("HEIMDALL_SITE")
