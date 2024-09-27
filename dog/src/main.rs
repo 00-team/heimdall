@@ -52,7 +52,7 @@ fn main() -> std::io::Result<()> {
 
     loop {
         if latest_ping.elapsed().as_secs() >= 20 {
-            client.post(API_PING).send().unwrap();
+            client.post(API_PING).body("hi").send().unwrap();
             latest_ping = Instant::now();
         }
 
