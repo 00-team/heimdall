@@ -1,13 +1,12 @@
 use actix_web::web::{Data, Json, Query};
-use actix_web::{get, post, HttpResponse, Scope};
+use actix_web::{get, post, HttpRequest, HttpResponse, Scope};
 use serde::Deserialize;
 use utoipa::{OpenApi, ToSchema};
 
 use crate::docs::UpdatePaths;
-use crate::models::site::SiteAuth;
-use crate::models::user::User;
+use crate::models::user::{Authorization, User};
 use crate::models::{site::Site, Response};
-use crate::models::{AppErr, ListInput};
+use crate::models::{AppErr, AppErrNotFound, ListInput};
 use crate::{utils, AppState};
 
 #[derive(OpenApi)]
@@ -57,10 +56,17 @@ struct SiteDumpBody {
 /// Dump
 #[post("/dump/")]
 async fn dump(
-    SiteAuth(site): SiteAuth, body: Json<SiteDumpBody>, state: Data<AppState>,
+    rq: HttpRequest, body: Json<SiteDumpBody>, state: Data<AppState>,
 ) -> Result<HttpResponse, AppErr> {
     let mut sites = state.sites.lock().await;
-    let site = sites.get_mut(&site.id).expect("unreachable");
+    let site = match Authorization::try_from(&rq)? {
+        Authorization::Site { id, token } => sites
+            .get_mut(&id)
+            .and_then(|v| if v.token == Some(token) { Some(v) } else { None })
+            .ok_or(()),
+        _ => Err(()),
+    }
+    .map_err(|_| AppErrNotFound("no site was found"))?;
 
     site.total_requests += body.total;
     site.total_requests_time += body.total_time;
@@ -94,10 +100,17 @@ async fn dump(
 /// Ping
 #[post("/ping/")]
 async fn ping(
-    SiteAuth(site): SiteAuth, state: Data<AppState>,
+    rq: HttpRequest, state: Data<AppState>,
 ) -> Result<HttpResponse, AppErr> {
     let mut sites = state.sites.lock().await;
-    let site = sites.get_mut(&site.id).expect("unreachable");
+    let site = match Authorization::try_from(&rq)? {
+        Authorization::Site { id, token } => sites
+            .get_mut(&id)
+            .and_then(|v| if v.token == Some(token) { Some(v) } else { None })
+            .ok_or(()),
+        _ => Err(()),
+    }
+    .map_err(|_| AppErrNotFound("no site was found"))?;
 
     site.latest_ping = utils::now();
 
