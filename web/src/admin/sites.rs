@@ -47,8 +47,8 @@ async fn add(
         name: body.name.clone(),
         ..Default::default()
     };
-    let sites = state.sites.lock()?;
-    sites.insert(site.id, site);
+    let mut sites = state.sites.lock()?;
+    sites.insert(site.id, site.clone());
 
     Ok(Json(site))
 }
