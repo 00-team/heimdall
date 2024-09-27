@@ -9,7 +9,10 @@ use actix_web::{
     web::{scope, Data, ServiceConfig},
     App, HttpResponse, HttpServer, Responder,
 };
+use models::site::Site;
 use sqlx::{Pool, Sqlite, SqlitePool};
+use std::collections::HashMap;
+use std::sync::Mutex;
 use utoipa::OpenApi;
 
 mod admin;
@@ -21,6 +24,7 @@ mod utils;
 
 pub struct AppState {
     pub sql: Pool<Sqlite>,
+    pub sites: Mutex<HashMap<i64, Site>>,
 }
 
 #[get("/openapi.json")]
@@ -31,10 +35,9 @@ async fn openapi() -> impl Responder {
     doc.merge(api::sites::ApiDoc::openapi());
 
     let mut admin_doc = ApiDoc::openapi();
-    // admin_doc.merge(admin::users::ApiDoc::openapi());
+    admin_doc.merge(admin::sites::ApiDoc::openapi());
 
     doc_add_prefix(&mut admin_doc, "/admin", false);
-
     doc.merge(admin_doc);
     doc_add_prefix(&mut doc, "/api", false);
     HttpResponse::Ok().json(doc)
@@ -68,12 +71,8 @@ fn config_app(app: &mut ServiceConfig) {
         scope("/api")
             .service(api::user::router())
             .service(api::verification::verification)
-            .service(api::sites::router()),
-        /* .service(
-            scope("/admin")
-                .service(admin::users::router())
-                .service(admin::product_tag::router()),
-        ), */
+            .service(api::sites::router())
+            .service(scope("/admin").service(admin::sites::router())),
     );
 }
 
@@ -86,10 +85,24 @@ async fn main() -> std::io::Result<()> {
     let _ = std::fs::create_dir(Config::RECORD_DIR);
     let pool = SqlitePool::connect(&evar!("DATABASE_URL")).await.unwrap();
 
+    let sites = sqlx::query_as! {
+        Site,
+        "select * from sites"
+    }
+    .fetch_all(&pool)
+    .await
+    .expect("could not get the sites")
+    .iter()
+    .map(|s| (s.id, s.clone()))
+    .collect::<HashMap<_, _>>();
+
     let server = HttpServer::new(move || {
         App::new()
             .wrap(middleware::Logger::new("%s %r %Ts"))
-            .app_data(Data::new(AppState { sql: pool.clone() }))
+            .app_data(Data::new(AppState {
+                sql: pool.clone(),
+                sites: Mutex::new(sites.clone()),
+            }))
             .configure(config_app)
     });
 

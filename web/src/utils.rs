@@ -18,18 +18,6 @@ pub fn now() -> i64 {
     chrono::Local::now().timestamp()
 }
 
-pub fn verify_slug(slug: &str) -> Result<(), AppErr> {
-    if slug.len() < 3 {
-        return Err(AppErrBadRequest("حداقل طول نشانه 3 کاراکتر است"));
-    }
-
-    if !slug.chars().all(|c| Config::SLUG_ABC.contains(&(c as u8))) {
-        return Err(AppErrBadRequest("نشانه شامل کاراکترهای نامعتبر است"));
-    }
-
-    Ok(())
-}
-
 pub fn get_random_string(charset: &[u8], len: usize) -> String {
     let mut rng = rand::thread_rng();
     (0..len).map(|_| charset[rng.gen_range(0..charset.len())] as char).collect()

@@ -24,13 +24,13 @@ pub struct Site {
 }
 
 impl Site {
-    pub fn verify_slug(slug: &str) -> Result<(), AppErr> {
-        if slug.len() < 1 || slug.len() > 100 {
-            return Err(AppErrBadRequest("invalid slug length > 0 && < 100"));
+    pub fn verify_name(name: &str) -> Result<(), AppErr> {
+        if name.len() < 1 || name.len() > 100 {
+            return Err(AppErrBadRequest("invalid name length > 0 && < 100"));
         }
 
-        if !slug.chars().all(|c| Config::SLUG_ABC.contains(&(c as u8))) {
-            return Err(AppErrBadRequest("invalid slug characters"));
+        if !name.chars().all(|c| Config::SITE_NAME_ABC.contains(&(c as u8))) {
+            return Err(AppErrBadRequest("invalid name characters"));
         }
 
         Ok(())
@@ -43,19 +43,19 @@ impl FromRequest for Site {
 
     fn from_request(req: &HttpRequest, _pl: &mut Payload) -> Self::Future {
         #[derive(Deserialize)]
-        struct PP {
-            site_slug: String,
+        struct SID {
+            site_id: i64,
         }
         let state = req.app_data::<Data<AppState>>().unwrap();
         let pool = state.sql.clone();
-        let path = Path::<PP>::extract(req);
+        let path = Path::<SID>::extract(req);
 
         Box::pin(async move {
             let path = path.await?;
             let result = sqlx::query_as! {
                 Site,
-                "select * from sites where slug = ?",
-                path.site_slug
+                "select * from sites where id = ?",
+                path.site_id
             }
             .fetch_one(&pool)
             .await?;
@@ -79,11 +79,11 @@ impl FromRequest for SiteAuth {
         // let path = Path::<PP>::extract(req);
 
         Box::pin(async move {
-            if let Authorization::Site { slug, token } = auth? {
+            if let Authorization::Site { id, token } = auth? {
                 let result = sqlx::query_as! {
                     Site,
-                    "select * from sites where slug = ? AND token = ?",
-                    slug, token
+                    "select * from sites where id = ? AND token = ?",
+                    id, token
                 }
                 .fetch_one(&pool)
                 .await?;
