@@ -58,6 +58,7 @@ impl TryFrom<&HttpRequest> for Authorization {
 
     fn try_from(rq: &HttpRequest) -> Result<Self, Self::Error> {
         if let Some(value) = rq.headers().get("authorization") {
+            log::info!("header value: {value:?} - {:?}", value.to_str());
             return Authorization::try_from(value.to_str()?);
         }
 
