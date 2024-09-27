@@ -16,6 +16,8 @@ impl Config {
     pub const CODE_ABC: &'static [u8] = b"0123456789";
     pub const TOKEN_ABC: &'static [u8] =
         b"!@#$%^&*_+abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*_+";
+    pub const SITE_TOKEN_ABC: &'static [u8] =
+        b"+abcdefghijklmnopqrstuvwxyzABCDEFGH+++MNOPQRSTUVWXYZ0123456789!^_-";
     pub const SITE_NAME_ABC: &'static [u8] =
         b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.";
 }

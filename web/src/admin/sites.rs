@@ -1,17 +1,18 @@
 use actix_web::web::{Data, Json};
-use actix_web::{post, Scope};
+use actix_web::{patch, post, Scope};
 use serde::Deserialize;
 use utoipa::{OpenApi, ToSchema};
 
+use crate::config::Config;
 use crate::docs::UpdatePaths;
 use crate::models::user::Admin;
 use crate::models::{site::Site, Response};
-use crate::AppState;
+use crate::{utils, AppState};
 
 #[derive(OpenApi)]
 #[openapi(
     tags((name = "admin::sites")),
-    paths(add),
+    paths(add, update),
     components(schemas(Site, SitesAddBody)),
     servers((url = "/sites")),
     modifiers(&UpdatePaths)
@@ -53,6 +54,45 @@ async fn add(
     Ok(Json(site))
 }
 
+#[derive(Deserialize, ToSchema)]
+struct SitesUpdateBody {
+    name: String,
+    token: bool,
+}
+
+#[utoipa::path(
+    patch,
+    request_body = SitesUpdateBody,
+    responses((status = 200, body = Site))
+)]
+/// Update
+#[patch("/{site_id}/")]
+async fn update(
+    _: Admin, site: Site, body: Json<SitesUpdateBody>, state: Data<AppState>,
+) -> Response<Site> {
+    let mut site = site;
+    Site::verify_name(&body.name)?;
+
+    site.name = body.name.clone();
+    if body.token {
+        site.token = Some(utils::get_random_string(Config::SITE_TOKEN_ABC, 41));
+    }
+
+    sqlx::query! {
+        "update sites set name = ?, token = ? where id = ?",
+        site.name, site.token, site.id
+    }
+    .execute(&state.sql)
+    .await?;
+
+    let mut sites = state.sites.lock()?;
+    let state_site = sites.get_mut(&site.id).expect("unreachable");
+    state_site.name = site.name.clone();
+    state_site.token = site.token.clone();
+
+    Ok(Json(site))
+}
+
 pub fn router() -> Scope {
-    Scope::new("/sites").service(add)
+    Scope::new("/sites").service(add).service(update)
 }
