@@ -1,4 +1,3 @@
-use crate::config::Config;
 use crate::models::{AppErr, AppErrBadRequest};
 use rand::Rng;
 

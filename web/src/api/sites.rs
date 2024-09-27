@@ -59,7 +59,7 @@ struct SiteDumpBody {
 async fn dump(
     SiteAuth(site): SiteAuth, body: Json<SiteDumpBody>, state: Data<AppState>,
 ) -> Result<HttpResponse, AppErr> {
-    let mut sites = state.sites.lock()?;
+    let mut sites = state.sites.lock().await;
     let site = sites.get_mut(&site.id).expect("unreachable");
 
     site.total_requests += body.total;
@@ -96,7 +96,7 @@ async fn dump(
 async fn ping(
     SiteAuth(site): SiteAuth, state: Data<AppState>,
 ) -> Result<HttpResponse, AppErr> {
-    let mut sites = state.sites.lock()?;
+    let mut sites = state.sites.lock().await;
     let site = sites.get_mut(&site.id).expect("unreachable");
 
     site.latest_ping = utils::now();

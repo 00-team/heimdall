@@ -13,7 +13,7 @@ use crate::{utils, AppState};
 #[openapi(
     tags((name = "admin::sites")),
     paths(add, update),
-    components(schemas(Site, SitesAddBody)),
+    components(schemas(Site, SitesAddBody, SitesUpdateBody)),
     servers((url = "/sites")),
     modifiers(&UpdatePaths)
 )]
@@ -48,7 +48,7 @@ async fn add(
         name: body.name.clone(),
         ..Default::default()
     };
-    let mut sites = state.sites.lock()?;
+    let mut sites = state.sites.lock().await;
     sites.insert(site.id, site.clone());
 
     Ok(Json(site))
@@ -85,7 +85,7 @@ async fn update(
     .execute(&state.sql)
     .await?;
 
-    let mut sites = state.sites.lock()?;
+    let mut sites = state.sites.lock().await;
     let state_site = sites.get_mut(&site.id).expect("unreachable");
     state_site.name = site.name.clone();
     state_site.token = site.token.clone();

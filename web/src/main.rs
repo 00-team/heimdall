@@ -12,7 +12,7 @@ use actix_web::{
 use models::site::Site;
 use sqlx::{Pool, Sqlite, SqlitePool};
 use std::collections::HashMap;
-use std::sync::Mutex;
+use tokio::sync::Mutex;
 use utoipa::OpenApi;
 
 mod admin;
@@ -110,7 +110,7 @@ async fn main() -> std::io::Result<()> {
         server.bind(("127.0.0.1", 7000)).unwrap()
     } else {
         use std::os::unix::fs::PermissionsExt;
-        const PATH: &'static str = "/usr/share/nginx/socks/heimdall.web.sock";
+        const PATH: &str = "/usr/share/nginx/socks/heimdall.web.sock";
         let server = server.bind_uds(PATH).unwrap();
         std::fs::set_permissions(PATH, std::fs::Permissions::from_mode(0o777))?;
         server

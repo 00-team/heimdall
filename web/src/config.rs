@@ -1,5 +1,3 @@
-use std::sync::OnceLock;
-
 #[derive(Debug)]
 /// Main Config
 pub struct Config {}
@@ -22,7 +20,8 @@ impl Config {
         b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.";
 }
 
-pub fn config() -> &'static Config {
-    static STATE: OnceLock<Config> = OnceLock::new();
-    STATE.get_or_init(|| Config {})
-}
+// use std::sync::OnceLock;
+// pub fn config() -> &'static Config {
+//     static STATE: OnceLock<Config> = OnceLock::new();
+//     STATE.get_or_init(|| Config {})
+// }

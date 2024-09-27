@@ -40,7 +40,7 @@ pub struct SiteMessage {
 
 impl Site {
     pub fn verify_name(name: &str) -> Result<(), AppErr> {
-        if name.len() < 1 || name.len() > 100 {
+        if name.is_empty() || name.len() > 100 {
             return Err(AppErrBadRequest("invalid name length > 0 && < 100"));
         }
 
@@ -58,12 +58,12 @@ impl FromRequest for Site {
 
     fn from_request(req: &HttpRequest, _pl: &mut Payload) -> Self::Future {
         #[derive(Deserialize)]
-        struct SID {
+        struct Sid {
             site_id: i64,
         }
         let state = req.app_data::<Data<AppState>>().unwrap();
         let pool = state.sql.clone();
-        let path = Path::<SID>::extract(req);
+        let path = Path::<Sid>::extract(req);
 
         Box::pin(async move {
             let path = path.await?;

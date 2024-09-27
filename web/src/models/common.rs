@@ -61,46 +61,47 @@ impl<T> sqlx::Type<Sqlite> for JsonStr<T> {
 
 impl<T: DeserializeOwned + Default> From<String> for JsonStr<T> {
     fn from(value: String) -> Self {
-        Self(serde_json::from_str::<T>(&value).unwrap_or(T::default()))
+        Self(serde_json::from_str::<T>(&value).unwrap_or_default())
     }
 }
 
-macro_rules! sql_enum {
-    ( $( $vis:vis enum $name:ident { $($member:ident,)* } )* ) => {
-        $(
-        #[derive(PartialEq, Default, Clone, Debug, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
-        #[serde(rename_all = "snake_case")]
-        $vis enum $name {
-            #[default]
-            $($member,)*
-        }
-
-        impl From<i64> for $name {
-            fn from(value: i64) -> Self {
-                match value {
-                    $(x if x == $name::$member as i64 => $name::$member,)*
-                    _ => $name::default()
-                }
-            }
-        }
-
-        impl sqlx::Type<sqlx::Sqlite> for $name {
-            fn type_info() -> sqlx::sqlite::SqliteTypeInfo {
-                <i64 as sqlx::Type<sqlx::Sqlite>>::type_info()
-            }
-        }
-
-        impl<'q> sqlx::Encode<'q, sqlx::Sqlite> for $name {
-            fn encode_by_ref(
-                &self, buf: &mut <sqlx::Sqlite as sqlx::Database>::ArgumentBuffer<'q>,
-            ) -> Result<sqlx::encode::IsNull, sqlx::error::BoxDynError> {
-                buf.push(sqlx::sqlite::SqliteArgumentValue::Int(self.clone() as i32));
-                Ok(sqlx::encode::IsNull::No)
-            }
-        }
-        )*
-    };
-}
+// macro_rules! sql_enum {
+//     ( $( $vis:vis enum $name:ident { $($member:ident,)* } )* ) => {
+//         $(
+//         #[derive(PartialEq, Default, Clone, Debug, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+//         #[serde(rename_all = "snake_case")]
+//         $vis enum $name {
+//             #[default]
+//             $($member,)*
+//         }
+//
+//         impl From<i64> for $name {
+//             fn from(value: i64) -> Self {
+//                 match value {
+//                     $(x if x == $name::$member as i64 => $name::$member,)*
+//                     _ => $name::default()
+//                 }
+//             }
+//         }
+//
+//         impl sqlx::Type<sqlx::Sqlite> for $name {
+//             fn type_info() -> sqlx::sqlite::SqliteTypeInfo {
+//                 <i64 as sqlx::Type<sqlx::Sqlite>>::type_info()
+//             }
+//         }
+//
+//         impl<'q> sqlx::Encode<'q, sqlx::Sqlite> for $name {
+//             fn encode_by_ref(
+//                 &self, buf: &mut <sqlx::Sqlite as sqlx::Database>::ArgumentBuffer<'q>,
+//             ) -> Result<sqlx::encode::IsNull, sqlx::error::BoxDynError> {
+//                 buf.push(sqlx::sqlite::SqliteArgumentValue::Int(self.clone() as i32));
+//                 Ok(sqlx::encode::IsNull::No)
+//             }
+//         }
+//         )*
+//     };
+// }
+// pub(crate) use sql_enum;
 
 macro_rules! inner_deref {
     ($parent:ident, $child:ident) => {
@@ -117,43 +118,41 @@ macro_rules! inner_deref {
         }
     };
 }
-
-macro_rules! from_request {
-    ($name:ident, $table:literal) => {
-        impl actix_web::FromRequest for $name {
-            type Error = crate::models::AppErr;
-            type Future = std::pin::Pin<
-                Box<
-                    dyn std::future::Future<Output = Result<Self, Self::Error>>,
-                >,
-            >;
-
-            fn from_request(
-                req: &actix_web::HttpRequest, _: &mut actix_web::dev::Payload,
-            ) -> Self::Future {
-                let path = actix_web::web::Path::<(i64,)>::extract(req);
-                let state = req
-                    .app_data::<actix_web::web::Data<crate::AppState>>()
-                    .unwrap();
-                let pool = state.sql.clone();
-
-                Box::pin(async move {
-                    let path = path.await?;
-                    let result = sqlx::query_as! {
-                        $name,
-                        "select * from " + $table + " where id = ?",
-                        path.0
-                    }
-                    .fetch_one(&pool)
-                    .await?;
-
-                    Ok(result)
-                })
-            }
-        }
-    };
-}
-
-pub(crate) use from_request;
 pub(crate) use inner_deref;
-pub(crate) use sql_enum;
+
+// macro_rules! from_request {
+//     ($name:ident, $table:literal) => {
+//         impl actix_web::FromRequest for $name {
+//             type Error = crate::models::AppErr;
+//             type Future = std::pin::Pin<
+//                 Box<
+//                     dyn std::future::Future<Output = Result<Self, Self::Error>>,
+//                 >,
+//             >;
+//
+//             fn from_request(
+//                 req: &actix_web::HttpRequest, _: &mut actix_web::dev::Payload,
+//             ) -> Self::Future {
+//                 let path = actix_web::web::Path::<(i64,)>::extract(req);
+//                 let state = req
+//                     .app_data::<actix_web::web::Data<crate::AppState>>()
+//                     .unwrap();
+//                 let pool = state.sql.clone();
+//
+//                 Box::pin(async move {
+//                     let path = path.await?;
+//                     let result = sqlx::query_as! {
+//                         $name,
+//                         "select * from " + $table + " where id = ?",
+//                         path.0
+//                     }
+//                     .fetch_one(&pool)
+//                     .await?;
+//
+//                     Ok(result)
+//                 })
+//             }
+//         }
+//     };
+// }
+// pub(crate) use from_request;

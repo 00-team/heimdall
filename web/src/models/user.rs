@@ -28,7 +28,7 @@ impl TryFrom<&str> for Authorization {
     type Error = AppErr;
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         let mut tokens = value.splitn(2, ' ');
-        let key = tokens.next().and_then(|v| Some(v.to_lowercase()));
+        let key = tokens.next().map(|v| v.to_lowercase());
         if key.is_none() {
             return Err(AppErrForbidden("auth key was not found"));
         }
