@@ -4,3 +4,5 @@ main.db*
 .ignore*
 .env
 log
+dog/err
+dog/out
