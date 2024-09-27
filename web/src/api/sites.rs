@@ -25,7 +25,9 @@ pub struct ApiDoc;
 )]
 /// List
 #[get("/")]
-async fn list(_: User, q: Query<ListInput>, state: Data<AppState>) -> Response<Vec<Site>> {
+async fn list(
+    _: User, q: Query<ListInput>, state: Data<AppState>,
+) -> Response<Vec<Site>> {
     let offset = q.page * 32;
     let sites = sqlx::query_as! {
         Site,

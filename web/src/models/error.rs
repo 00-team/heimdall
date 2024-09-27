@@ -1,6 +1,7 @@
 use actix_http::header::ToStrError;
 use actix_web::{
-    body::BoxBody, error::PayloadError, http::StatusCode, HttpResponse, ResponseError,
+    body::BoxBody, error::PayloadError, http::StatusCode, HttpResponse,
+    ResponseError,
 };
 use serde::{Deserialize, Serialize};
 use std::{
@@ -20,19 +21,11 @@ pub struct AppErr {
 
 impl AppErr {
     pub fn new(status: u16, subject: &str) -> Self {
-        Self {
-            status,
-            subject: subject.to_string(),
-            content: None,
-        }
+        Self { status, subject: subject.to_string(), content: None }
     }
 
     pub fn default() -> Self {
-        Self {
-            status: 500,
-            subject: "server error".to_string(),
-            content: None,
-        }
+        Self { status: 500, subject: "server error".to_string(), content: None }
     }
 }
 
@@ -44,7 +37,8 @@ impl fmt::Display for AppErr {
 
 impl ResponseError for AppErr {
     fn status_code(&self) -> StatusCode {
-        StatusCode::from_u16(self.status).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR)
+        StatusCode::from_u16(self.status)
+            .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR)
     }
 
     fn error_response(&self) -> HttpResponse<BoxBody> {

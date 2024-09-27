@@ -32,9 +32,7 @@ pub fn verify_slug(slug: &str) -> Result<(), AppErr> {
 
 pub fn get_random_string(charset: &[u8], len: usize) -> String {
     let mut rng = rand::thread_rng();
-    (0..len)
-        .map(|_| charset[rng.gen_range(0..charset.len())] as char)
-        .collect()
+    (0..len).map(|_| charset[rng.gen_range(0..charset.len())] as char).collect()
 }
 
 pub trait CutOff {

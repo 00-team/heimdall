@@ -10,7 +10,9 @@ use utoipa::ToSchema;
 
 use crate::{config::Config, AppState};
 
-use super::{inner_deref, user::Authorization, AppErr, AppErrBadRequest, AppErrForbidden};
+use super::{
+    inner_deref, user::Authorization, AppErr, AppErrBadRequest, AppErrForbidden,
+};
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow, ToSchema, Clone)]
 pub struct Site {

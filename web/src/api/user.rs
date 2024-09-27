@@ -36,8 +36,11 @@ struct LoginBody {
 )]
 /// Login
 #[post("/login/")]
-async fn login(body: Json<LoginBody>, state: Data<AppState>) -> Result<HttpResponse, AppErr> {
-    verification::verify(&body.phone, &body.code, verification::Action::Login).await?;
+async fn login(
+    body: Json<LoginBody>, state: Data<AppState>,
+) -> Result<HttpResponse, AppErr> {
+    verification::verify(&body.phone, &body.code, verification::Action::Login)
+        .await?;
 
     let token = utils::get_random_string(Config::TOKEN_ABC, 69);
 
@@ -81,13 +84,14 @@ async fn login(body: Json<LoginBody>, state: Data<AppState>) -> Result<HttpRespo
         }
     };
 
-    let cook = Cookie::build("authorization", format!("user {}:{token}", user.id))
-        .path("/")
-        .secure(true)
-        .same_site(SameSite::Lax)
-        .http_only(true)
-        .max_age(Duration::weeks(12))
-        .finish();
+    let cook =
+        Cookie::build("authorization", format!("user {}:{token}", user.id))
+            .path("/")
+            .secure(true)
+            .same_site(SameSite::Lax)
+            .http_only(true)
+            .max_age(Duration::weeks(12))
+            .finish();
 
     Ok(HttpResponse::Ok().cookie(cook).json(user))
 }
@@ -133,7 +137,9 @@ struct UserUpdateBody {
 )]
 /// Update
 #[patch("/")]
-async fn update(user: User, body: Json<UserUpdateBody>, state: Data<AppState>) -> Response<User> {
+async fn update(
+    user: User, body: Json<UserUpdateBody>, state: Data<AppState>,
+) -> Response<User> {
     let mut user = user;
     user.name = body.name.clone();
     user.name.cut_off(255);

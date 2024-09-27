@@ -44,8 +44,7 @@ impl<T: Serialize> Serialize for JsonStr<T> {
 
 impl<'q, T: Serialize> sqlx::Encode<'q, Sqlite> for JsonStr<T> {
     fn encode_by_ref(
-        &self,
-        buf: &mut <Sqlite as sqlx::Database>::ArgumentBuffer<'q>,
+        &self, buf: &mut <Sqlite as sqlx::Database>::ArgumentBuffer<'q>,
     ) -> Result<IsNull, sqlx::error::BoxDynError> {
         let result = serde_json::to_string(&self.0).unwrap_or("{}".to_string());
         buf.push(SqliteArgumentValue::Text(result.into()));
@@ -123,12 +122,14 @@ macro_rules! from_request {
     ($name:ident, $table:literal) => {
         impl actix_web::FromRequest for $name {
             type Error = crate::models::AppErr;
-            type Future =
-                std::pin::Pin<Box<dyn std::future::Future<Output = Result<Self, Self::Error>>>>;
+            type Future = std::pin::Pin<
+                Box<
+                    dyn std::future::Future<Output = Result<Self, Self::Error>>,
+                >,
+            >;
 
             fn from_request(
-                req: &actix_web::HttpRequest,
-                _: &mut actix_web::dev::Payload,
+                req: &actix_web::HttpRequest, _: &mut actix_web::dev::Payload,
             ) -> Self::Future {
                 let path = actix_web::web::Path::<(i64,)>::extract(req);
                 let state = req

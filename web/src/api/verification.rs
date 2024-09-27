@@ -60,7 +60,9 @@ struct VerificationResponse {
 )]
 /// Verification
 #[post("/verification/")]
-async fn verification(body: Json<VerificationData>) -> Response<VerificationResponse> {
+async fn verification(
+    body: Json<VerificationData>,
+) -> Response<VerificationResponse> {
     let now = utils::now();
     utils::phone_validator(&body.phone)?;
 
@@ -98,15 +100,15 @@ async fn verification(body: Json<VerificationData>) -> Response<VerificationResp
     }))
 }
 
-pub async fn verify(phone: &str, code: &str, action: Action) -> Result<(), AppErr> {
+pub async fn verify(
+    phone: &str, code: &str, action: Action,
+) -> Result<(), AppErr> {
     let now = utils::now();
 
     let mut vdb = verify_state().lock().await;
     vdb.retain(|_, v| v.expires - now > 0);
 
-    let v = vdb
-        .get_mut(phone)
-        .ok_or(AppErrBadRequest("bad verification"))?;
+    let v = vdb.get_mut(phone).ok_or(AppErrBadRequest("bad verification"))?;
 
     v.tries += 1;
 
