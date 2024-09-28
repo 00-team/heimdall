@@ -77,11 +77,14 @@ fn config_app(app: &mut ServiceConfig) {
             .service(scope("/admin").service(admin::sites::router())),
     );
     app.default_service(|r: ServiceRequest| {
-        actix_utils::future::ok(r.into_response(
-            HttpResponse::Ok().content_type(ContentType::html()).body(
-                read_to_string("dist/index.html").expect("no index.html"),
+        actix_utils::future::ok(
+            r.into_response(
+                HttpResponse::Ok().content_type(ContentType::html()).body(
+                    read_to_string("dist/index.html")
+                        .unwrap_or("no index.html".to_string()),
+                ),
             ),
-        ))
+        )
     });
 }
 

@@ -1,0 +1,19 @@
+.site-list {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    flex-wrap: wrap;
+    justify-content: space-evenly;
+    align-content: start;
+
+    .site {
+        width: 500px;
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        border: 2px solid var(--fg-3);
+        border-radius: var(--radius);
+        gap: 0.5rem;
+        overflow: hidden;
+        padding: 0.5rem;
+    }
+}

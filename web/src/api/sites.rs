@@ -1,5 +1,7 @@
-use actix_web::web::{Data, Json, Query};
-use actix_web::{get, post, HttpRequest, HttpResponse, Scope};
+use actix_web::web::{self, Data, Json, Query};
+use actix_web::{get, post, rt, HttpRequest, HttpResponse, Scope};
+use actix_ws::AggregatedMessage;
+use futures_util::StreamExt;
 use serde::Deserialize;
 use utoipa::{OpenApi, ToSchema};
 
@@ -12,7 +14,7 @@ use crate::{utils, AppState};
 #[derive(OpenApi)]
 #[openapi(
     tags((name = "api::sites")),
-    paths(list, dump, ping),
+    paths(list, dump, ping, ws_test),
     components(schemas(Site, SiteDumpBody)),
     servers((url = "/sites")),
     modifiers(&UpdatePaths)
@@ -120,6 +122,79 @@ async fn ping(
     Ok(HttpResponse::Ok().finish())
 }
 
+#[utoipa::path(get)]
+/// WebSocks Test
+#[get("/ws-test/")]
+async fn ws_test(
+    rq: HttpRequest, stream: web::Payload, state: Data<AppState>,
+) -> Result<HttpResponse, AppErr> {
+    let (res, mut session, stream) = actix_ws::handle(&rq, stream)?;
+
+    let mut stream = stream
+        .aggregate_continuations()
+        // aggregate continuation frames up to 1MiB
+        .max_continuation_size(1024 * 1024);
+
+    // let _ = session.text("welcome kid").await;
+
+    rt::spawn(async move {
+        while let Some(msg) = stream.next().await {
+            if let Err(e) = &msg {
+                log::info!("ws msg err: {e:?}");
+            }
+
+            log::info!("ws msg: {msg:?}");
+            match msg.unwrap() {
+                // AggregatedMessage::Text() => {
+                //     for (_, site) in sites.iter() {
+                //         let _ = session
+                //             .text(serde_json::to_string(site).expect("xxx"))
+                //             .await;
+                //     }
+                //     // let res = session.text("a message from server").await;
+                //     // log::info!("res: {res:?}");
+                //     // let res = session.ping(b"").await;
+                //     // log::info!("ping res: {res:?}");
+                // }
+                AggregatedMessage::Text(txt) => {
+                    let id = txt.parse::<i64>();
+                    if id.is_err() {
+                        return;
+                    }
+                    let sites = state.sites.lock().await;
+                    let site = sites.get(&id.unwrap());
+                    if site.is_none() {
+                        let _ = session
+                            .text(
+                                serde_json::to_string(&AppErrNotFound(
+                                    "site not found",
+                                ))
+                                .unwrap(),
+                            )
+                            .await;
+                        return;
+                    }
+                    let _ = session
+                        .text(serde_json::to_string(site.unwrap()).unwrap())
+                        .await;
+                }
+                AggregatedMessage::Ping(bytes) => {
+                    let res = session.pong(&bytes).await;
+                    log::info!("pong res: {res:?}");
+                }
+                _ => {} // AggregatedMessage::Pong(_) => {}
+                        // AggregatedMessage::Close(_) => {}
+            }
+        }
+    });
+
+    Ok(res)
+}
+
 pub fn router() -> Scope {
-    Scope::new("/sites").service(list).service(dump).service(ping)
+    Scope::new("/sites")
+        .service(list)
+        .service(dump)
+        .service(ping)
+        .service(ws_test)
 }
