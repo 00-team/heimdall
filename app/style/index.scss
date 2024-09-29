@@ -65,10 +65,16 @@ body {
     --green: #00dc7d;
     --yellow: #ffd600;
 
-    --mc-1: #2e3f7f;
-    --mc-2: #4a69ff;
-    --mc-3: #5199ff;
-    --mc-4: #17f1d7;
+    --mc-1: #0a0a0a;
+    --mc-2: #151515;
+    --mc-3: #fbc403;
+    --mc-4: #ffdd03;
+
+    /* --mc-1: #141414; */
+    /* --mc-2: #2b2b2b; */
+    /* --mc-3: #cf7500; */
+    /* --mc-4: #e3b04b; */
+
     --mc-url: var(--mc-4);
 
     --scroll-bg: var(--mc-1);

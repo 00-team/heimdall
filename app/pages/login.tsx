@@ -73,7 +73,6 @@ export default () => {
                         class='styled'
                         placeholder='phone: e.g. 09182325555'
                         value={state.phone}
-                        autocomplete='phone'
                         onInput={e => {
                             setState({ phone: e.currentTarget.value })
                         }}
@@ -82,12 +81,23 @@ export default () => {
                 <Show
                     when={state.stage == 'phone'}
                     fallback={
-                        <button class='styled' onclick={login}>
+                        <button
+                            disabled={
+                                state.code.length != 5 ||
+                                state.phone.length != 11
+                            }
+                            class='styled'
+                            onclick={login}
+                        >
                             Verify Code
                         </button>
                     }
                 >
-                    <button class='styled' onclick={verification}>
+                    <button
+                        disabled={state.phone.length != 11}
+                        class='styled'
+                        onclick={verification}
+                    >
                         Send Code
                     </button>
                 </Show>

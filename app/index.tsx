@@ -10,7 +10,7 @@ import { lazy } from 'solid-js'
 const Root = () => {
     return (
         <>
-            <Show when={self.loged_in} fallback={<Login />}>
+            <Show when={self.loged_in && 0} fallback={<Login />}>
                 <Router>
                     <Route path='/' component={Dash} />
                     <Route

@@ -1,8 +1,21 @@
 button.styled {
-    background-color: var(--bg-2);
-    color: var(--white);
+    --bg: var(--mc-2);
+    --fg: var(--white);
+    --bd: var(--mc-3);
+
+    --hv-bd: var(--mc-4);
+    --hv-bg: var(--bg);
+    --hv-fg: var(--fg);
+
+    --av-bd: var(--mc-3);
+    --av-bg: var(--mc-3);
+    --av-fg: var(--mc-1);
+
+    background-color: var(--bg);
+    border-color: var(--bd);
+    color: var(--fg);
+
     border: 2px;
-    border-color: var(--fg-2);
     border-style: solid;
     border-radius: var(--radius);
     font-size: 18px;
@@ -10,10 +23,7 @@ button.styled {
     cursor: pointer;
     padding: 0.25rem;
     transition: 220ms ease-in-out;
-    transition-property: border-color, background-color;
-
-    --color-1: var(--fg-1);
-    --color-2: var(--fg-2);
+    transition-property: border-color, background-color, color;
 
     &.icon {
         display: flex;
@@ -27,17 +37,23 @@ button.styled {
 
     &.trash,
     &.remove {
-        --color-1: var(--red);
-        --color-2: var(--red);
+        --bd: var(--red);
+        --hv-bg: var(--red);
+        --hv-bd: var(--red);
+        --av-bg: var(--red);
+        --av-bd: var(--red);
     }
 
     &:hover {
-        border-color: var(--color-1);
+        border-color: var(--hv-bd);
+        background-color: var(--hv-bg);
+        color: var(--hv-fg);
     }
 
     &:not(&.icon):active {
-        background-color: var(--color-2);
-        border-color: var(--color-2);
+        border-color: var(--av-bd);
+        background-color: var(--av-bg);
+        color: var(--av-fg);
     }
 
     &:focus {
@@ -47,8 +63,9 @@ button.styled {
     &:disabled {
         pointer-events: none;
         opacity: 0.6;
-        border: 2px solid var(--bg-3);
-        background-color: var(--bg-1);
+        border: 2px solid var(--mc-2);
+        background-color: var(--mc-1);
+        color: var(--white);
         outline: 0;
         cursor: default;
     }
