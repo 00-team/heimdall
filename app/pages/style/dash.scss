@@ -37,6 +37,13 @@
                 background-color: var(--mc-3);
             }
 
+            &.offline {
+                border-color: var(--red);
+                .line {
+                    background-color: var(--red);
+                }
+            }
+
             &-info {
                 display: grid;
                 gap: 0.5rem;

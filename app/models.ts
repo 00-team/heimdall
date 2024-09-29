@@ -7,6 +7,7 @@ export type SiteModel = {
     total_requests_time: number
     status: { [k: string]: number }
     token: string | null
+    online: boolean
 }
 
 export type UserModel = {

@@ -64,6 +64,7 @@ async fn dump(
         Authorization::Site { id, token } => sites
             .get_mut(&id)
             .and_then(|v| if v.token == Some(token) { Some(v) } else { None })
+            .and_then(|v| if v.online { Some(v) } else { None })
             .ok_or(()),
         _ => Err(()),
     }
@@ -105,6 +106,7 @@ async fn ping(
         Authorization::Site { id, token } => sites
             .get_mut(&id)
             .and_then(|v| if v.token == Some(token) { Some(v) } else { None })
+            .and_then(|v| if v.online { Some(v) } else { None })
             .ok_or(()),
         _ => Err(()),
     }

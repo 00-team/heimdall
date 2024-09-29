@@ -1,5 +1,5 @@
 import { SiteModel } from 'models'
-import { fmt_timeago, httpx } from 'shared'
+import { fmt_timeago, httpx, now } from 'shared'
 import { createEffect, onMount, Show } from 'solid-js'
 import { createStore, produce } from 'solid-js/store'
 
@@ -83,7 +83,9 @@ export default () => {
                         clearInterval(state.loop)
                         return
                     }
-                    Object.keys(state.sites).map(id => state.socket.send(id))
+                    Object.values(state.sites)
+                        .filter(site => site.online)
+                        .forEach(site => state.socket.send(site.id.toString()))
                 }, LOOP_TIMEOUT),
             })
         }
@@ -127,12 +129,17 @@ export default () => {
             </div>
             <div class='site-list'>
                 {Object.values(state.sites).map(site => (
-                    <div class='site'>
+                    <div
+                        class='site'
+                        classList={{ offline: now() - site.latest_ping > 60 }}
+                    >
                         <div class='site-info'>
                             <span>id | name:</span>
                             <span>
                                 {site.id} | {site.name}
                             </span>
+                            <span>online:</span>
+                            <span>{site.online ? '✅' : '❌'}</span>
                             <span>latest request:</span>
                             <span>{fmt_timeago(site.latest_request)}</span>
                             <span>latest ping:</span>
