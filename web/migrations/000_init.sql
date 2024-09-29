@@ -14,7 +14,8 @@ create table if not exists sites (
     total_requests integer not null default 0,
     total_requests_time integer not null default 0,
     status text not null default "{}", -- {"400": 100, "200": 2000}
-    token text
+    token text,
+    online boolean not null default false,
 );
 
 create table if not exists sites_messages (

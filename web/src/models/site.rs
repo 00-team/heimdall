@@ -24,6 +24,7 @@ pub struct Site {
     #[schema(value_type = HashMap<u16, u64>)]
     pub status: JsonStr<HashMap<u16, u64>>,
     pub token: Option<String>,
+    pub online: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, FromRow, ToSchema, Clone, Default)]

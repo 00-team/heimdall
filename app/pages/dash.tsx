@@ -5,24 +5,23 @@ import { createStore, produce } from 'solid-js/store'
 
 import './style/dash.scss'
 
-const LOOP_TIMEOUT = 1e3
+const LOOP_TIMEOUT = 2e3
 const SOCKET_STATUS = {
-    offline: 'Offline',
-    connecting: 'Connecting',
-    online: 'Online',
+    offline: ['Offline', 'var(--mc-3)', 'var(--green)'],
+    online: ['Online', 'var(--green)', 'var(--red)'],
 } as const
 
 export default () => {
     type State = {
         sites: { [id: string]: SiteModel }
         socket: WebSocket | null
-        socket_status: string
+        socket_status: keyof typeof SOCKET_STATUS
         loop: number | null
     }
     const [state, setState] = createStore<State>({
         sites: {},
         socket: null,
-        socket_status: SOCKET_STATUS.offline,
+        socket_status: 'offline',
         loop: null,
     })
 
@@ -59,7 +58,7 @@ export default () => {
 
     createEffect(() => {
         if (state.socket == null) {
-            setState({ socket_status: SOCKET_STATUS.offline })
+            setState({ socket_status: 'offline' })
             return
         }
 
@@ -67,7 +66,7 @@ export default () => {
             setState(
                 produce(s => {
                     s.socket = null
-                    s.socket_status = SOCKET_STATUS.offline
+                    s.socket_status = 'offline'
                     clearInterval(s.loop)
                     s.loop = null
                 })
@@ -78,7 +77,7 @@ export default () => {
             if (state.loop != null) clearInterval(state.loop)
 
             setState({
-                socket_status: SOCKET_STATUS.online,
+                socket_status: 'online',
                 loop: setInterval(() => {
                     if (state.socket == null) {
                         clearInterval(state.loop)
@@ -107,6 +106,10 @@ export default () => {
             <div class='status-bar'>
                 <button
                     class='styled connection'
+                    style={{
+                        '--bd': SOCKET_STATUS[state.socket_status][1],
+                        '--hv-bd': SOCKET_STATUS[state.socket_status][2],
+                    }}
                     onClick={() => {
                         if (
                             state.socket &&
@@ -119,7 +122,7 @@ export default () => {
                         }
                     }}
                 >
-                    {state.socket_status}
+                    {SOCKET_STATUS[state.socket_status][0]}
                 </button>
             </div>
             <div class='site-list'>
@@ -145,10 +148,13 @@ export default () => {
                                     }
                                     fallback={'0s'}
                                 >
-                                    {site.total_requests /
-                                        site.total_requests_time /
-                                        1e3}
-                                    s
+                                    {
+                                        ~~(
+                                            site.total_requests_time /
+                                            site.total_requests
+                                        )
+                                    }
+                                    ms
                                 </Show>
                             </span>
                         </div>

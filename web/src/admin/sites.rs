@@ -59,6 +59,7 @@ async fn add(
 struct SitesUpdateBody {
     name: String,
     token: bool,
+    online: bool,
 }
 
 #[utoipa::path(
@@ -75,14 +76,15 @@ async fn update(
     let mut site = site;
     Site::verify_name(&body.name)?;
 
+    site.online = body.online;
     site.name = body.name.clone();
     if body.token {
         site.token = Some(utils::get_random_string(Config::SITE_TOKEN_ABC, 41));
     }
 
     sqlx::query! {
-        "update sites set name = ?, token = ? where id = ?",
-        site.name, site.token, site.id
+        "update sites set name = ?, token = ?, online = ? where id = ?",
+        site.name, site.token, site.online, site.id
     }
     .execute(&state.sql)
     .await?;
@@ -91,6 +93,7 @@ async fn update(
     let state_site = sites.get_mut(&site.id).expect("unreachable");
     state_site.name = site.name.clone();
     state_site.token = site.token.clone();
+    state_site.online = site.online;
 
     Ok(Json(site))
 }

@@ -12,11 +12,8 @@ button.styled {
     --av-fg: var(--mc-1);
 
     background-color: var(--bg);
-    border-color: var(--bd);
+    border: 2px solid var(--bd);
     color: var(--fg);
-
-    border: 2px;
-    border-style: solid;
     border-radius: var(--radius);
     font-size: 18px;
     /* font-family: 'Zan'; */
