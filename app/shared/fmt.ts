@@ -6,3 +6,9 @@ export function fmt_timestamp(ts: number): string {
 
     return date + ' - ' + time
 }
+
+export function fmt_timeago(ts: number): string {
+    if (ts == 0) return '---'
+    let now = ~~(new Date().getTime() / 1e3)
+    return `${now - ts}s ago`
+}

@@ -1,3 +1,53 @@
 .dash-fnd {
-    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+
+    .status-bar {
+        padding: 1rem;
+        border-bottom: 2px solid var(--mc-3);
+    }
+
+    .site-list {
+        width: 100%;
+        height: 100%;
+        padding: 1rem;
+        gap: 1rem;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-evenly;
+        overflow-y: auto;
+        align-content: start;
+
+        .site {
+            background-color: var(--mc-2);
+            width: 450px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            border-radius: var(--radius);
+            border: 2px solid var(--mc-3);
+            overflow: hidden;
+
+            .line {
+                width: 100%;
+                height: 2px;
+                background-color: var(--mc-3);
+            }
+
+            &-info {
+                display: grid;
+                gap: 0.5rem;
+                grid-template-columns: 1fr 1fr;
+            }
+
+            &-status {
+                width: 100%;
+                display: grid;
+                grid-template-columns: 1fr 3fr;
+            }
+        }
+    }
 }
