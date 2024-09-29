@@ -99,8 +99,8 @@ function httpx(P: HttpxProps) {
             addAlert({
                 type: 'error',
                 timeout: 10,
-                subject: this.response.message,
-                content: '',
+                subject: this.response.subject,
+                content: this.response.content,
             })
         }
     }

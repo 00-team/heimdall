@@ -16,6 +16,7 @@ async function get_default(): Promise<SelfModel> {
             httpx({
                 url: '/api/user/',
                 method: 'GET',
+                show_messages: false,
                 reject,
                 onLoad(x) {
                     if (x.status != 200) return reject()
