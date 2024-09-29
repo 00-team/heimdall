@@ -1,0 +1,27 @@
+input.styled {
+    background-color: var(--bg-1);
+    border: 2px solid var(--fg-2);
+    font-size: 18px;
+    border-radius: var(--radius);
+    padding: 0.25rem;
+    color: var(--white);
+
+    &:focus {
+        border-color: var(--fg-3);
+        outline: 0;
+    }
+}
+
+textarea.styled {
+    background-color: var(--bg-1);
+    border: 2px solid var(--fg-2);
+    font-size: 18px;
+    border-radius: var(--radius);
+    padding: 0.25rem;
+    color: var(--white);
+
+    &:focus {
+        border-color: var(--fg-3);
+        outline: 0;
+    }
+}

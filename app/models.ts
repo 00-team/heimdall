@@ -8,3 +8,11 @@ export type SiteModel = {
     status: { [k: string]: number }
     token: string | null
 }
+
+export type UserModel = {
+    id: number
+    phone: string
+    name: string
+    token: string | null
+    admin: boolean
+}

@@ -1,0 +1,55 @@
+button.styled {
+    background-color: var(--bg-2);
+    color: var(--white);
+    border: 2px;
+    border-color: var(--fg-2);
+    border-style: solid;
+    border-radius: var(--radius);
+    font-size: 18px;
+    font-family: 'Zan';
+    cursor: pointer;
+    padding: 0.25rem;
+    transition: 220ms ease-in-out;
+    transition-property: border-color, background-color;
+
+    --color-1: var(--fg-1);
+    --color-2: var(--fg-2);
+
+    &.icon {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: transparent;
+        width: 32px;
+        height: 32px;
+        border: 0;
+    }
+
+    &.trash,
+    &.remove {
+        --color-1: var(--red);
+        --color-2: var(--red);
+    }
+
+    &:hover {
+        border-color: var(--color-1);
+    }
+
+    &:not(&.icon):active {
+        background-color: var(--color-2);
+        border-color: var(--color-2);
+    }
+
+    &:focus {
+        outline: 0;
+    }
+
+    &:disabled {
+        pointer-events: none;
+        opacity: 0.6;
+        border: 2px solid var(--bg-3);
+        background-color: var(--bg-1);
+        outline: 0;
+        cursor: default;
+    }
+}
