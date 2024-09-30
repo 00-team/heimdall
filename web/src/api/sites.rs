@@ -6,15 +6,17 @@ use serde::Deserialize;
 use utoipa::{OpenApi, ToSchema};
 
 use crate::docs::UpdatePaths;
+use crate::models::site::SiteMessage;
 use crate::models::user::{Authorization, User};
 use crate::models::{site::Site, Response};
 use crate::models::{AppErr, AppErrNotFound, ListInput};
+use crate::utils::CutOff;
 use crate::{utils, AppState};
 
 #[derive(OpenApi)]
 #[openapi(
     tags((name = "api::sites")),
-    paths(list, dump, ping, ws_test),
+    paths(list, dump, ping, ws_test, message_add, message_list),
     components(schemas(Site, SiteDumpBody)),
     servers((url = "/sites")),
     modifiers(&UpdatePaths)
@@ -124,6 +126,69 @@ async fn ping(
     Ok(HttpResponse::Ok().finish())
 }
 
+#[derive(Deserialize, ToSchema)]
+struct SiteAddMessageBody {
+    text: String,
+    tag: String,
+}
+
+#[utoipa::path(
+    post,
+    request_body = SiteAddMessageBody,
+    responses((status = 200, body = SiteMessage))
+)]
+/// Add Message
+#[post("/messages/")]
+async fn message_add(
+    rq: HttpRequest, body: Json<SiteAddMessageBody>, state: Data<AppState>,
+) -> Response<SiteMessage> {
+    let mut sites = state.sites.lock().await;
+    let site = match Authorization::try_from(&rq)? {
+        Authorization::Site { id, token } => sites
+            .get_mut(&id)
+            .and_then(|v| if v.token == Some(token) { Some(v) } else { None })
+            .ok_or(()),
+        _ => Err(()),
+    }
+    .map_err(|_| AppErrNotFound("no site was found"))?;
+
+    let mut text = body.text.clone();
+    let mut tag = body.tag.clone();
+    text.cut_off(2048);
+    tag.cut_off(255);
+
+    let timestamp = utils::now();
+    let mut msg = SiteMessage { id: 0, timestamp, text, tag, site: site.id };
+    site.latest_message_timestamp = msg.timestamp;
+
+    let result = sqlx::query! {
+        "insert into sites_messages(site, timestamp, text, tag) values(?,?,?,?)",
+        msg.site, msg.timestamp, msg.text, msg.tag
+    }
+    .execute(&state.sql)
+    .await?;
+
+    msg.id = result.last_insert_rowid();
+
+    Ok(Json(msg))
+}
+
+#[utoipa::path(get, responses((status = 200, body = Vec<SiteMessage>)))]
+/// Message List
+#[get("/messages/")]
+async fn message_list(
+    _: User, state: Data<AppState>,
+) -> Response<Vec<SiteMessage>> {
+    let messages = sqlx::query_as! {
+        SiteMessage,
+        "select * from sites_messages",
+    }
+    .fetch_all(&state.sql)
+    .await?;
+
+    Ok(Json(messages))
+}
+
 #[utoipa::path(get)]
 /// WebSocks Test
 #[get("/ws-test/")]
@@ -198,5 +263,7 @@ pub fn router() -> Scope {
         .service(list)
         .service(dump)
         .service(ping)
+        .service(message_add)
+        .service(message_list)
         .service(ws_test)
 }

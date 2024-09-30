@@ -25,6 +25,7 @@ pub struct Site {
     pub status: JsonStr<HashMap<u16, u64>>,
     pub token: Option<String>,
     pub online: bool,
+    pub latest_message_timestamp: i64,
 }
 
 #[derive(Debug, Serialize, Deserialize, FromRow, ToSchema, Clone, Default)]

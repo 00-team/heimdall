@@ -176,6 +176,12 @@ export default () => {
                                 )
                             )}
                         </div>
+                        <div class='line' />
+                        <div class='site-messages'>message</div>
+                        <div class='line' />
+                        <div class='site-actions'>
+                            <button class='styled'>Site</button>
+                        </div>
                     </div>
                 ))}
             </div>
