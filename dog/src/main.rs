@@ -26,7 +26,7 @@ struct Dump {
 
 macro_rules! evar {
     ($name:literal) => {
-        env::var($name).expect(concat!($name, "was not found in .env"))
+        env::var($name).expect(concat!($name, " was not found in env"))
     };
 }
 
