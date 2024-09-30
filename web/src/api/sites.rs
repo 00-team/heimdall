@@ -17,7 +17,7 @@ use crate::{utils, AppState};
 #[openapi(
     tags((name = "api::sites")),
     paths(list, dump, ping, ws_test, message_add, message_list),
-    components(schemas(Site, SiteDumpBody)),
+    components(schemas(Site, SiteDumpBody, SiteMessage, SiteAddMessageBody)),
     servers((url = "/sites")),
     modifiers(&UpdatePaths)
 )]
@@ -137,7 +137,7 @@ struct SiteAddMessageBody {
     request_body = SiteAddMessageBody,
     responses((status = 200, body = SiteMessage))
 )]
-/// Add Message
+/// Message Add
 #[post("/messages/")]
 async fn message_add(
     rq: HttpRequest, body: Json<SiteAddMessageBody>, state: Data<AppState>,
@@ -168,20 +168,32 @@ async fn message_add(
     .execute(&state.sql)
     .await?;
 
+    sqlx::query!{
+        "delete from sites_messages where site = ? AND id < (select id from sites_messages where site = ? order by id desc limit 1 offset 32)",
+        msg.site, msg.site
+    }
+    .execute(&state.sql)
+    .await?;
+
     msg.id = result.last_insert_rowid();
 
     Ok(Json(msg))
 }
 
-#[utoipa::path(get, responses((status = 200, body = Vec<SiteMessage>)))]
+#[utoipa::path(
+    get,
+    params(("site_id" = i64, Path, example = 1)),
+    responses((status = 200, body = Vec<SiteMessage>))
+)]
 /// Message List
-#[get("/messages/")]
+#[get("/{site_id}/messages/")]
 async fn message_list(
-    _: User, state: Data<AppState>,
+    _: User, site: Site, state: Data<AppState>,
 ) -> Response<Vec<SiteMessage>> {
     let messages = sqlx::query_as! {
         SiteMessage,
-        "select * from sites_messages",
+        "select * from sites_messages where site = ? order by id desc",
+        site.id
     }
     .fetch_all(&state.sql)
     .await?;

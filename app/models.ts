@@ -8,6 +8,15 @@ export type SiteModel = {
     status: { [k: string]: number }
     token: string | null
     online: boolean
+    latest_message_timestamp: number
+}
+
+export type SiteMessageModel = {
+    id: number
+    site: number
+    timestamp: number
+    text: string
+    tag: string
 }
 
 export type UserModel = {

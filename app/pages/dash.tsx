@@ -1,4 +1,4 @@
-import { SiteModel } from 'models'
+import { SiteMessageModel, SiteModel } from 'models'
 import { fmt_timeago, httpx, now } from 'shared'
 import { createEffect, onMount, Show } from 'solid-js'
 import { createStore, produce } from 'solid-js/store'
@@ -14,12 +14,14 @@ const SOCKET_STATUS = {
 export default () => {
     type State = {
         sites: { [id: string]: SiteModel }
+        messages: { [id: string]: SiteMessageModel[] }
         socket: WebSocket | null
         socket_status: keyof typeof SOCKET_STATUS
         loop: number | null
     }
     const [state, setState] = createStore<State>({
         sites: {},
+        messages: {},
         socket: null,
         socket_status: 'offline',
         loop: null,
@@ -39,10 +41,27 @@ export default () => {
                     produce(s => {
                         sites.forEach(site => {
                             s.sites[site.id] = site
+                            load_messages(site.id)
                         })
                     })
                 )
                 if (x.response.length == 32) return load(page + 1)
+            },
+        })
+    }
+
+    function load_messages(site_id: number) {
+        httpx({
+            url: `/api/sites/${site_id}/messages/`,
+            method: 'GET',
+            onLoad(x) {
+                if (x.status != 200 || x.response.length == 0) return
+                let messages = x.response as SiteMessageModel[]
+                setState(
+                    produce(s => {
+                        s.messages[site_id] = messages.slice(0, 3)
+                    })
+                )
             },
         })
     }
@@ -97,6 +116,12 @@ export default () => {
                 produce(s => {
                     let site = JSON.parse(e.data) as SiteModel
                     if (!site.id) return alert('err')
+                    if (
+                        s.sites[site.id].latest_message_timestamp !=
+                        site.latest_message_timestamp
+                    ) {
+                        load_messages(site.id)
+                    }
                     s.sites[site.id] = site
                 })
             )
@@ -176,12 +201,35 @@ export default () => {
                                 )
                             )}
                         </div>
-                        <div class='line' />
-                        <div class='site-messages'>message</div>
-                        <div class='line' />
+                        <Show when={state.messages[site.id]}>
+                            <div class='line' />
+                            <div class='site-messages'>
+                                {state.messages[site.id].map(msg => (
+                                    <div class='message'>
+                                        <span class='tag'>{msg.tag}</span>
+                                        <p>
+                                            {msg.text
+                                                .split('\\n')
+                                                .map((l, i, a) => (
+                                                    <>
+                                                        {l}
+                                                        {i < a.length - 1 && (
+                                                            <br />
+                                                        )}
+                                                    </>
+                                                ))}
+                                        </p>
+                                        <span class='timestamp'>
+                                            {fmt_timeago(msg.timestamp)}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </Show>
+                        {/*<div class='line' />
                         <div class='site-actions'>
                             <button class='styled'>Site</button>
-                        </div>
+                        </div>*/}
                     </div>
                 ))}
             </div>
