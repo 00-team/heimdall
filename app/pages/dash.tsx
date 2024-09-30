@@ -219,7 +219,7 @@ export default () => {
                                         <span class='tag'>{msg.tag}</span>
                                         <p>
                                             {msg.text
-                                                .split('\\n')
+                                                .split('\n')
                                                 .map((l, i, a) => (
                                                     <>
                                                         {l}
