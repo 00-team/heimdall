@@ -5,7 +5,7 @@ import { createStore, produce } from 'solid-js/store'
 
 import './style/dash.scss'
 
-const LOOP_TIMEOUT = 2e3
+const LOOP_TIMEOUT = 10e3
 const SOCKET_STATUS = {
     offline: ['Offline', 'var(--mc-3)', 'var(--green)'],
     online: ['Online', 'var(--green)', 'var(--red)'],
@@ -71,7 +71,7 @@ export default () => {
             location.protocol == 'http:'
                 ? 'ws://localhost:7000'
                 : `wss://${location.host}`
-        let socket = new WebSocket(`${host}/api/sites/ws-test/`)
+        let socket = new WebSocket(`${host}/api/sites/live/`)
         setState({ socket })
     }
 

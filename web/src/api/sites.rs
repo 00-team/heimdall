@@ -16,7 +16,7 @@ use crate::{utils, AppState};
 #[derive(OpenApi)]
 #[openapi(
     tags((name = "api::sites")),
-    paths(list, dump, ping, ws_test, message_add, message_list),
+    paths(list, dump, ping, live, message_add, message_list),
     components(schemas(Site, SiteDumpBody, SiteMessage, SiteAddMessageBody)),
     servers((url = "/sites")),
     modifiers(&UpdatePaths)
@@ -202,9 +202,9 @@ async fn message_list(
 }
 
 #[utoipa::path(get)]
-/// WebSocks Test
-#[get("/ws-test/")]
-async fn ws_test(
+/// live
+#[get("/live/")]
+async fn live(
     rq: HttpRequest, stream: web::Payload, state: Data<AppState>,
 ) -> Result<HttpResponse, AppErr> {
     let (res, mut session, stream) = actix_ws::handle(&rq, stream)?;
@@ -222,19 +222,8 @@ async fn ws_test(
                 log::info!("ws msg err: {e:?}");
             }
 
-            log::info!("ws msg: {msg:?}");
+            // log::info!("ws msg: {msg:?}");
             match msg.unwrap() {
-                // AggregatedMessage::Text() => {
-                //     for (_, site) in sites.iter() {
-                //         let _ = session
-                //             .text(serde_json::to_string(site).expect("xxx"))
-                //             .await;
-                //     }
-                //     // let res = session.text("a message from server").await;
-                //     // log::info!("res: {res:?}");
-                //     // let res = session.ping(b"").await;
-                //     // log::info!("ping res: {res:?}");
-                // }
                 AggregatedMessage::Text(txt) => {
                     let id = txt.parse::<i64>();
                     if id.is_err() {
@@ -258,11 +247,9 @@ async fn ws_test(
                         .await;
                 }
                 AggregatedMessage::Ping(bytes) => {
-                    let res = session.pong(&bytes).await;
-                    log::info!("pong res: {res:?}");
+                    let _ = session.pong(&bytes).await;
                 }
-                _ => {} // AggregatedMessage::Pong(_) => {}
-                        // AggregatedMessage::Close(_) => {}
+                _ => {}
             }
         }
     });
@@ -277,5 +264,5 @@ pub fn router() -> Scope {
         .service(ping)
         .service(message_add)
         .service(message_list)
-        .service(ws_test)
+        .service(live)
 }
