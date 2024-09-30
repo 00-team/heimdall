@@ -14,7 +14,7 @@ const API_PING: &str = "https://heimdall.00-team.org/api/sites/ping/";
 
 #[derive(Debug, Deserialize_tuple)]
 struct Message {
-    _status: u16,
+    status: u16,
     upstream_response_time: f64,
 }
 

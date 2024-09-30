@@ -3,6 +3,7 @@ use actix_web::{get, post, rt, HttpRequest, HttpResponse, Scope};
 use actix_ws::AggregatedMessage;
 use futures_util::StreamExt;
 use serde::Deserialize;
+use std::collections::HashMap;
 use utoipa::{OpenApi, ToSchema};
 
 use crate::docs::UpdatePaths;
@@ -49,6 +50,7 @@ async fn list(
 struct SiteDumpBody {
     total: i64,
     total_time: i64,
+    status: HashMap<String, u64>,
 }
 
 #[utoipa::path(
@@ -75,17 +77,26 @@ async fn dump(
     site.total_requests += body.total;
     site.total_requests_time += body.total_time;
     site.latest_request = utils::now();
+    for (s, c) in body.status.iter() {
+        if let Some(oc) = site.status.get_mut(s) {
+            *oc += *c;
+        } else {
+            site.status.insert(s.clone(), *c);
+        }
+    }
 
     sqlx::query! {"
         update sites set
         total_requests = ?,
         total_requests_time = ?,
-        latest_request = ?
+        latest_request = ?,
+        status = ?
         where id = ?
     ",
         site.total_requests,
         site.total_requests_time,
         site.latest_request,
+        site.status,
         site.id
     }
     .execute(&state.sql)

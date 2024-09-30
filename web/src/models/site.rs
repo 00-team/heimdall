@@ -22,7 +22,7 @@ pub struct Site {
     pub total_requests: i64,
     pub total_requests_time: i64,
     #[schema(value_type = HashMap<u16, u64>)]
-    pub status: JsonStr<HashMap<u16, u64>>,
+    pub status: JsonStr<HashMap<String, u64>>,
     pub token: Option<String>,
     pub online: bool,
     pub latest_message_timestamp: i64,
