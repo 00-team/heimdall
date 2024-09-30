@@ -7,6 +7,9 @@
     .status-bar {
         padding: 1rem;
         border-bottom: 2px solid var(--mc-3);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
 
     .site-list {

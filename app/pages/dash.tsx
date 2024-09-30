@@ -5,7 +5,6 @@ import { createStore, produce } from 'solid-js/store'
 
 import './style/dash.scss'
 
-const LOOP_TIMEOUT = 10e3
 const SOCKET_STATUS = {
     offline: ['Offline', 'var(--mc-3)', 'var(--green)'],
     online: ['Online', 'var(--green)', 'var(--red)'],
@@ -17,17 +16,43 @@ export default () => {
         messages: { [id: string]: SiteMessageModel[] }
         socket: WebSocket | null
         socket_status: keyof typeof SOCKET_STATUS
-        loop: number | null
+        timer: number
+        now: number
+        act(): void
     }
     const [state, setState] = createStore<State>({
         sites: {},
         messages: {},
         socket: null,
         socket_status: 'offline',
-        loop: null,
+        timer: 5,
+        now: 0,
+        act() {
+            if (!state.socket || state.socket.readyState != WebSocket.OPEN)
+                return
+
+            Object.values(state.sites)
+                .filter(site => site.online)
+                .forEach(site => state.socket.send(site.id.toString()))
+        },
     })
 
-    onMount(() => load(0))
+    onMount(() => {
+        setState(
+            produce(s => {
+                setInterval(() => {
+                    s.now = ~~(new Date().getTime() / 1e3)
+                    if (!s.socket || s.socket.readyState != WebSocket.OPEN)
+                        return
+                    if (s.timer <= 0) {
+                        s.act()
+                        s.timer = 5
+                    } else s.timer--
+                }, 1e3)
+            })
+        )
+        load(0)
+    })
 
     function load(page: number) {
         httpx({
@@ -82,31 +107,11 @@ export default () => {
         }
 
         function onclose() {
-            setState(
-                produce(s => {
-                    s.socket = null
-                    s.socket_status = 'offline'
-                    clearInterval(s.loop)
-                    s.loop = null
-                })
-            )
+            setState({ socket: null, socket_status: 'offline' })
         }
 
         state.socket.onopen = () => {
-            if (state.loop != null) clearInterval(state.loop)
-
-            setState({
-                socket_status: 'online',
-                loop: setInterval(() => {
-                    if (state.socket == null) {
-                        clearInterval(state.loop)
-                        return
-                    }
-                    Object.values(state.sites)
-                        .filter(site => site.online)
-                        .forEach(site => state.socket.send(site.id.toString()))
-                }, LOOP_TIMEOUT),
-            })
+            setState({ socket_status: 'online' })
         }
         state.socket.onclose = onclose
         state.socket.onerror = onclose
@@ -151,6 +156,7 @@ export default () => {
                 >
                     {SOCKET_STATUS[state.socket_status][0]}
                 </button>
+                <span>{state.timer}s</span>
             </div>
             <div class='site-list'>
                 {Object.values(state.sites).map(site => (
@@ -166,9 +172,13 @@ export default () => {
                             <span>online:</span>
                             <span>{site.online ? '✅' : '❌'}</span>
                             <span>latest request:</span>
-                            <span>{fmt_timeago(site.latest_request)}</span>
+                            <span>
+                                {fmt_timeago(state.now - site.latest_request)}
+                            </span>
                             <span>latest ping:</span>
-                            <span>{fmt_timeago(site.latest_ping)}</span>
+                            <span>
+                                {fmt_timeago(state.now - site.latest_ping)}
+                            </span>
                             <span>total requests:</span>
                             <span>{site.total_requests.toLocaleString()}</span>
                             <span>average request time:</span>
@@ -220,7 +230,9 @@ export default () => {
                                                 ))}
                                         </p>
                                         <span class='timestamp'>
-                                            {fmt_timeago(msg.timestamp)}
+                                            {fmt_timeago(
+                                                state.now - msg.timestamp
+                                            )}
                                         </span>
                                     </div>
                                 ))}

@@ -7,9 +7,7 @@ export function fmt_timestamp(ts: number): string {
     return date + ' - ' + time
 }
 
-export function fmt_timeago(ts: number): string {
-    if (ts == 0) return '---'
-    let seconds = ~~(new Date().getTime() / 1e3) - ts
+export function fmt_timeago(seconds: number): string {
     if (seconds < 1) return 'now'
 
     let out = ''
