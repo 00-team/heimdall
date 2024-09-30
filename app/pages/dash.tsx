@@ -1,5 +1,5 @@
 import { SiteMessageModel, SiteModel } from 'models'
-import { fmt_timeago, httpx, now } from 'shared'
+import { fmt_timeago, httpx } from 'shared'
 import { createEffect, onMount, Show } from 'solid-js'
 import { createStore, produce } from 'solid-js/store'
 
@@ -162,7 +162,9 @@ export default () => {
                 {Object.values(state.sites).map(site => (
                     <div
                         class='site'
-                        classList={{ offline: now() - site.latest_ping > 60 }}
+                        classList={{
+                            offline: state.now - site.latest_ping > 120,
+                        }}
                     >
                         <div class='site-info'>
                             <span>id | name:</span>
