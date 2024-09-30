@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     env,
     fs::Permissions,
     io::ErrorKind,
@@ -22,6 +23,7 @@ struct Message {
 struct Dump {
     total: u64,
     total_time: u64,
+    status: HashMap<String, u64>,
 }
 
 macro_rules! evar {
@@ -74,6 +76,12 @@ fn main() -> std::io::Result<()> {
             Ok(msg) => {
                 dump.total += 1;
                 dump.total_time += (msg.upstream_response_time * 1000.0) as u64;
+                let sk = msg.status.to_string();
+                if let Some(c) = dump.status.get_mut(&sk) {
+                    *c += 1;
+                } else {
+                    dump.status.insert(sk, 1);
+                }
             }
             Err(e) => println!(
                 "err: {e}\n[{size}]: {}",
