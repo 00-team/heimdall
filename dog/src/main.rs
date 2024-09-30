@@ -19,7 +19,7 @@ struct Message {
     upstream_response_time: f64,
 }
 
-#[derive(Serialize, Default)]
+#[derive(Serialize, Default, Debug)]
 struct Dump {
     total: u64,
     total_time: u64,
@@ -54,6 +54,7 @@ fn main() -> std::io::Result<()> {
 
     loop {
         if latest_request.elapsed().as_secs() >= 10 && dump.total != 0 {
+            println!("dump: {dump:#?}");
             let res = client.post(API_DUMP).json(&dump).send().unwrap();
             if res.status() != reqwest::StatusCode::OK {
                 println!("err: {:?}", res.json::<serde_json::Value>());
