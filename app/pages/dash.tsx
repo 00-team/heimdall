@@ -1,6 +1,6 @@
 import { SiteMessageModel, SiteModel } from 'models'
 import { fmt_timeago, fmt_timestamp, httpx } from 'shared'
-import { createEffect, onMount, Show, startTransition } from 'solid-js'
+import { createEffect, onMount, Show } from 'solid-js'
 import { createStore, produce } from 'solid-js/store'
 
 import './style/dash.scss'
@@ -18,6 +18,7 @@ export default () => {
         socket_status: keyof typeof SOCKET_STATUS
         timer: number
         now: number
+        focus: boolean
         act(): void
     }
     const [state, setState] = createStore<State>({
@@ -26,9 +27,14 @@ export default () => {
         socket: null,
         socket_status: 'offline',
         timer: 5,
+        focus: true,
         now: 0,
         act() {
-            if (!state.socket || state.socket.readyState != WebSocket.OPEN)
+            if (
+                !state.socket ||
+                state.socket.readyState != WebSocket.OPEN ||
+                !this.focus
+            )
                 return
 
             Object.values(state.sites)
@@ -38,6 +44,9 @@ export default () => {
     })
 
     onMount(() => {
+        window.onfocus = () => setState({ focus: true })
+        window.onblur = () => setState({ focus: false })
+
         setState(
             produce(s => {
                 setInterval(() => {
