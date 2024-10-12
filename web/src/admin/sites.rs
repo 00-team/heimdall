@@ -48,6 +48,7 @@ async fn add(
     let site = Site {
         id: result.last_insert_rowid(),
         name: body.name.clone(),
+        timestamp: now,
         ..Default::default()
     };
     let mut sites = state.sites.lock().await;
