@@ -1,5 +1,7 @@
 use std::{collections::HashMap, future::Future, pin::Pin};
 
+use super::{AppErr, AppErrBadRequest, JsonStr};
+use crate::{config::Config, models::AppErrNotFound, AppState};
 use actix_http::Payload;
 use actix_web::{
     web::{Data, Path},
@@ -9,20 +11,28 @@ use serde::{Deserialize, Serialize};
 use sqlx::prelude::FromRow;
 use utoipa::ToSchema;
 
-use crate::{config::Config, models::AppErrNotFound, AppState};
-
-use super::{AppErr, AppErrBadRequest, JsonStr};
+#[derive(Deserialize, Serialize, ToSchema, Clone, Debug)]
+pub struct Status {
+    pub code: u16,
+    pub count: u64,
+    pub max_time: u64,
+    pub min_time: u64,
+    pub total_time: u64,
+}
 
 #[derive(Debug, Serialize, Deserialize, FromRow, ToSchema, Clone, Default)]
 pub struct Site {
     pub id: i64,
     pub name: String,
+    pub timestamp: i64,
     pub latest_request: i64,
     pub latest_ping: i64,
     pub total_requests: i64,
     pub total_requests_time: i64,
+    pub requests_max_time: i64,
+    pub requests_min_time: i64,
     #[schema(value_type = HashMap<String, u64>)]
-    pub status: JsonStr<HashMap<String, u64>>,
+    pub status: JsonStr<HashMap<String, Status>>,
     pub token: Option<String>,
     pub online: bool,
     pub latest_message_timestamp: i64,

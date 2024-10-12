@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use utoipa::{OpenApi, ToSchema};
 
 use crate::docs::UpdatePaths;
-use crate::models::site::SiteMessage;
+use crate::models::site::{SiteMessage, Status};
 use crate::models::user::{Authorization, User};
 use crate::models::{site::Site, Response};
 use crate::models::{AppErr, AppErrNotFound, ListInput};
@@ -18,7 +18,9 @@ use crate::{utils, AppState};
 #[openapi(
     tags((name = "api::sites")),
     paths(list, dump, ping, live, message_add, message_list),
-    components(schemas(Site, SiteDumpBody, SiteMessage, SiteAddMessageBody)),
+    components(schemas(
+        Site, Status, SiteDumpBody, SiteMessage, SiteAddMessageBody
+    )),
     servers((url = "/sites")),
     modifiers(&UpdatePaths)
 )]
@@ -50,7 +52,9 @@ async fn list(
 struct SiteDumpBody {
     total: i64,
     total_time: i64,
-    status: HashMap<String, u64>,
+    max_time: i64,
+    min_time: i64,
+    status: HashMap<String, Status>,
 }
 
 #[utoipa::path(
@@ -76,12 +80,17 @@ async fn dump(
 
     site.total_requests += body.total;
     site.total_requests_time += body.total_time;
+    site.requests_max_time = body.max_time.max(site.requests_max_time);
+    site.requests_min_time = body.min_time.min(site.requests_min_time);
     site.latest_request = utils::now();
-    for (s, c) in body.status.iter() {
-        if let Some(oc) = site.status.get_mut(s) {
-            *oc += *c;
+    for (sk, ns) in body.status.iter() {
+        if let Some(os) = site.status.get_mut(sk) {
+            os.count += ns.count;
+            os.total_time += ns.total_time;
+            os.max_time = os.max_time.max(ns.max_time);
+            os.min_time = os.min_time.min(ns.min_time);
         } else {
-            site.status.insert(s.clone(), *c);
+            site.status.insert(sk.clone(), ns.clone());
         }
     }
 
@@ -89,12 +98,16 @@ async fn dump(
         update sites set
         total_requests = ?,
         total_requests_time = ?,
+        requests_max_time = ?,
+        requests_min_time = ?,
         latest_request = ?,
         status = ?
         where id = ?
     ",
         site.total_requests,
         site.total_requests_time,
+        site.requests_max_time,
+        site.requests_min_time,
         site.latest_request,
         site.status,
         site.id

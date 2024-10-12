@@ -37,9 +37,10 @@ async fn add(
 ) -> Response<Site> {
     Site::verify_name(&body.name)?;
 
+    let now = utils::now();
     let result = sqlx::query! {
-        "insert into sites(name) values(?)",
-        body.name
+        "insert into sites(name, timestamp) values(?, ?)",
+        body.name, now
     }
     .execute(&state.sql)
     .await?;
