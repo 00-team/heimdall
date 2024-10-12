@@ -1,6 +1,6 @@
 import { SiteMessageModel, SiteModel } from 'models'
-import { fmt_timeago, httpx } from 'shared'
-import { createEffect, onMount, Show } from 'solid-js'
+import { fmt_timeago, fmt_timestamp, httpx } from 'shared'
+import { createEffect, onMount, Show, startTransition } from 'solid-js'
 import { createStore, produce } from 'solid-js/store'
 
 import './style/dash.scss'
@@ -173,6 +173,8 @@ export default () => {
                             </span>
                             <span>online:</span>
                             <span>{site.online ? '✅' : '❌'}</span>
+                            <span>date:</span>
+                            <span>{fmt_timestamp(site.timestamp)}</span>
                             <span>latest request:</span>
                             <span>
                                 {fmt_timeago(state.now - site.latest_request)}
@@ -181,38 +183,56 @@ export default () => {
                             <span>
                                 {fmt_timeago(state.now - site.latest_ping)}
                             </span>
-                            <span>total requests:</span>
+                            <span>count:</span>
                             <span>{site.total_requests.toLocaleString()}</span>
-                            <span>average request time:</span>
-                            <span>
-                                <Show
-                                    when={
-                                        site.total_requests != 0 &&
-                                        site.total_requests_time != 0
-                                    }
-                                    fallback={'0s'}
-                                >
-                                    {
-                                        ~~(
-                                            site.total_requests_time /
-                                            site.total_requests
-                                        )
-                                    }
-                                    ms
-                                </Show>
-                            </span>
+                            <span>time:</span>
+                            <div class='request-time'>
+                                <span>{site.requests_min_time}ms</span>
+                                <span class='spacer'>|</span>
+                                <span>
+                                    <Show
+                                        when={
+                                            site.total_requests != 0 &&
+                                            site.total_requests_time != 0
+                                        }
+                                        fallback={'0ms'}
+                                    >
+                                        {
+                                            ~~(
+                                                site.total_requests_time /
+                                                site.total_requests
+                                            )
+                                        }
+                                        ms
+                                    </Show>
+                                </span>
+                                <span class='spacer'>|</span>
+                                <span>{site.requests_max_time}ms</span>
+                            </div>
                         </div>
                         <div class='line' />
-                        <div class='site-status'>
-                            {Object.entries(site.status).map(
-                                ([status, count]) => (
-                                    <>
-                                        <span>{status}:</span>
-                                        <span>{count.toLocaleString()}</span>
-                                    </>
-                                )
-                            )}
-                        </div>
+                        <table class='site-status-table'>
+                            <thead>
+                                <tr>
+                                    <th>code</th>
+                                    <th>min</th>
+                                    <th>avg</th>
+                                    <th>max</th>
+                                    <th>count</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {Object.values(site.status).map(s => (
+                                    <tr>
+                                        <td>{s.code}</td>
+                                        <td>{s.min_time}ms</td>
+                                        <td>{~~(s.total_time / s.count)}ms</td>
+                                        <td>{s.max_time}ms</td>
+                                        <td>{s.count}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                         <Show when={state.messages[site.id]}>
                             <div class='line' />
                             <div class='site-messages'>

@@ -16,7 +16,7 @@ export type SiteModel = {
     total_requests_time: number
     requests_max_time: number
     requests_min_time: number
-    status: { [k: string]: SiteMessageModel }
+    status: { [k: string]: SiteStatusModel }
     token: string | null
     online: boolean
     latest_message_timestamp: number

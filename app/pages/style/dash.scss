@@ -25,6 +25,8 @@
         align-items: start;
 
         .site {
+            --hc: var(--mc-3);
+
             background-color: var(--mc-2);
             width: 450px;
             display: flex;
@@ -32,32 +34,60 @@
             gap: 0.5rem;
             padding: 0.5rem;
             border-radius: var(--radius);
-            border: 2px solid var(--mc-3);
+            border: 2px solid var(--hc);
             overflow: hidden;
 
             .line {
                 width: 100%;
                 height: 2px;
-                background-color: var(--mc-3);
+                background-color: var(--hc);
             }
 
             &.offline {
-                border-color: var(--red);
-                .line {
-                    background-color: var(--red);
-                }
+                --hc: var(--red);
             }
 
             &-info {
                 display: grid;
                 gap: 0.5rem;
                 grid-template-columns: 1fr 1fr;
+
+                .request-time {
+                    display: flex;
+                    gap: 0.3rem;
+
+                    .spacer {
+                        color: var(--hc);
+                    }
+                }
+            }
+
+            &-status-table {
+                border-collapse: collapse;
+                text-align: center;
+
+                th,
+                td {
+                    border: 2px solid var(--hc);
+                    border-top: 0;
+                    border-bottom: 0;
+                    padding: 0.3rem;
+                }
+
+                tr td:first-child,
+                tr th:first-child {
+                    border-left: 0;
+                }
+                tr td:last-child,
+                tr th:last-child {
+                    border-right: 0;
+                }
             }
 
             &-status {
                 width: 100%;
                 display: grid;
-                grid-template-columns: 1fr 3fr;
+                grid-template-columns: repeat(5, 1fr);
             }
 
             &-messages {
