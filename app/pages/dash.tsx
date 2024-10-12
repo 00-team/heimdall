@@ -17,6 +17,7 @@ export default () => {
         socket: WebSocket | null
         socket_status: keyof typeof SOCKET_STATUS
         timer: number
+        online: boolean
         now: number
         focus: boolean
         act(): void
@@ -26,20 +27,21 @@ export default () => {
         messages: {},
         socket: null,
         socket_status: 'offline',
+        online: false,
         timer: 5,
         focus: true,
         now: 0,
         act() {
-            if (
-                !state.socket ||
-                state.socket.readyState != WebSocket.OPEN ||
-                !this.focus
-            )
-                return
+            if (!this.focus) return
+            if (this.online) {
+                if (!this.socket || this.socket.readyState != WebSocket.OPEN) {
+                    return connect()
+                }
+            } else return
 
             Object.values(state.sites)
                 .filter(site => site.online)
-                .forEach(site => state.socket.send(site.id.toString()))
+                .forEach(site => this.socket.send(site.id.toString()))
         },
     })
 
@@ -157,8 +159,9 @@ export default () => {
                             state.socket.readyState == WebSocket.OPEN
                         ) {
                             state.socket.close()
-                            setState({ socket: null })
+                            setState({ socket: null, online: false })
                         } else {
+                            setState({ online: true })
                             connect()
                         }
                     }}
