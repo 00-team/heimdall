@@ -26,10 +26,10 @@ for (status, time) in DATA:
     DUMP['total'] += 1
     DUMP['total_time'] += time
 
-    if DUMP['min_time'] > time:
+    if DUMP['min_time'] > time or DUMP['min_time'] == 0:
         DUMP['min_time'] = time
 
-    if DUMP['max_time'] < time or DUMP['min_time'] == 0:
+    if DUMP['max_time'] < time:
         DUMP['max_time'] = time
 
     sk = str(status)
