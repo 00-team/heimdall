@@ -42,12 +42,6 @@ if [ ! -f main.db ]; then
     echo $SPACER
 fi
 
-if check_diff "migrations/*"; then
-    echo "$EG run all pending migrations"
-    cargo sqlx mig run
-    echo $SPACER
-fi
-
 if check_diff "src/*"; then
     echo "$EG cargo build"
     cargo build --release
