@@ -20,10 +20,21 @@ struct Message {
 }
 
 #[derive(Serialize, Default, Debug)]
+struct Status {
+    code: u16,
+    count: u64,
+    max_time: u64,
+    min_time: u64,
+    total_time: u64,
+}
+
+#[derive(Serialize, Default, Debug)]
 struct Dump {
     total: u64,
     total_time: u64,
-    status: HashMap<String, u64>,
+    max_time: u64,
+    min_time: u64,
+    status: HashMap<String, Status>,
 }
 
 macro_rules! evar {
@@ -74,13 +85,39 @@ fn main() -> std::io::Result<()> {
         };
         match serde_json::from_slice::<Message>(&buf[24..size]) {
             Ok(msg) => {
+                let time = (msg.upstream_response_time * 1000.0) as u64;
                 dump.total += 1;
-                dump.total_time += (msg.upstream_response_time * 1000.0) as u64;
+                dump.total_time += time;
+                if dump.max_time < time {
+                    dump.max_time = time;
+                }
+
+                if dump.min_time > time || dump.min_time == 0 {
+                    dump.min_time = time;
+                }
+
                 let sk = msg.status.to_string();
-                if let Some(c) = dump.status.get_mut(&sk) {
-                    *c += 1;
+                if let Some(status) = dump.status.get_mut(&sk) {
+                    status.count += 1;
+                    status.total_time += time;
+
+                    if status.min_time > time || status.min_time == 0 {
+                        status.min_time = time;
+                    }
+                    if status.max_time < time {
+                        status.max_time = time;
+                    }
                 } else {
-                    dump.status.insert(sk, 1);
+                    dump.status.insert(
+                        sk,
+                        Status {
+                            code: msg.status,
+                            total_time: time,
+                            min_time: time,
+                            max_time: time,
+                            count: 1,
+                        },
+                    );
                 }
             }
             Err(e) => println!(
