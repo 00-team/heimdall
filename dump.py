@@ -29,7 +29,7 @@ for (status, time) in DATA:
     if DUMP['min_time'] > time:
         DUMP['min_time'] = time
 
-    if DUMP['max_time'] < time:
+    if DUMP['max_time'] < time or DUMP['min_time'] == 0:
         DUMP['max_time'] = time
 
     sk = str(status)
