@@ -81,14 +81,18 @@ async fn dump(
     site.total_requests += body.total;
     site.total_requests_time += body.total_time;
     site.requests_max_time = body.max_time.max(site.requests_max_time);
-    site.requests_min_time = body.min_time.min(site.requests_min_time);
+    if body.min_time < site.requests_min_time || site.requests_min_time == 0 {
+        site.requests_min_time = body.min_time;
+    }
     site.latest_request = utils::now();
     for (sk, ns) in body.status.iter() {
         if let Some(os) = site.status.get_mut(sk) {
             os.count += ns.count;
             os.total_time += ns.total_time;
             os.max_time = os.max_time.max(ns.max_time);
-            os.min_time = os.min_time.min(ns.min_time);
+            if ns.min_time < os.min_time || os.min_time == 0 {
+                os.min_time = ns.min_time;
+            }
         } else {
             site.status.insert(sk.clone(), ns.clone());
         }

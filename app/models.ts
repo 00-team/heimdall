@@ -1,11 +1,22 @@
+export type SiteStatusModel = {
+    code: number
+    count: number
+    max_time: number
+    min_time: number
+    total_time: number
+}
+
 export type SiteModel = {
     id: number
     name: string
+    timestamp: number
     latest_request: number
     latest_ping: number
     total_requests: number
     total_requests_time: number
-    status: { [k: string]: number }
+    requests_max_time: number
+    requests_min_time: number
+    status: { [k: string]: SiteMessageModel }
     token: string | null
     online: boolean
     latest_message_timestamp: number
