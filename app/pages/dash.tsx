@@ -19,7 +19,6 @@ export default () => {
         timer: number
         online: boolean
         now: number
-        focus: boolean
         act(): void
     }
     const [state, setState] = createStore<State>({
@@ -29,32 +28,26 @@ export default () => {
         socket_status: 'offline',
         online: false,
         timer: 5,
-        focus: true,
         now: 0,
         act() {
-            if (!this.focus) return
-            if (this.online) {
-                if (!this.socket || this.socket.readyState != WebSocket.OPEN) {
-                    return connect()
-                }
-            } else return
+            if (!state.socket || state.socket.readyState != WebSocket.OPEN) {
+                connect()
+            }
 
             Object.values(state.sites)
                 .filter(site => site.online)
-                .forEach(site => this.socket.send(site.id.toString()))
+                .forEach(site => state.socket.send(site.id.toString()))
         },
     })
 
     onMount(() => {
-        window.onfocus = () => setState({ focus: true })
-        window.onblur = () => setState({ focus: false })
+        window.onfocus = () => setState({ timer: 0 })
 
         setState(
             produce(s => {
                 setInterval(() => {
                     s.now = ~~(new Date().getTime() / 1e3)
-                    if (!s.socket || s.socket.readyState != WebSocket.OPEN)
-                        return
+                    if (!s.online) return
                     if (s.timer <= 0) {
                         s.act()
                         s.timer = 5
