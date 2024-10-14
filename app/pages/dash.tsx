@@ -30,8 +30,8 @@ export default () => {
         timer: 5,
         now: 0,
         act() {
-            if (!state.socket || state.socket.readyState != WebSocket.OPEN) {
-                connect()
+            if (!this.socket || this.socket.readyState != WebSocket.OPEN) {
+                return connect()
             }
 
             Object.values(state.sites)
@@ -101,7 +101,7 @@ export default () => {
                 ? 'ws://localhost:7000'
                 : `wss://${location.host}`
         let socket = new WebSocket(`${host}/api/sites/live/`)
-        setState({ socket })
+        setState({ socket, online: true })
     }
 
     createEffect(() => {
@@ -154,7 +154,6 @@ export default () => {
                             state.socket.close()
                             setState({ socket: null, online: false })
                         } else {
-                            setState({ online: true })
                             connect()
                         }
                     }}
