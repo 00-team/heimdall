@@ -1,4 +1,3 @@
-use crate::config::evar;
 use crate::config::Config;
 use crate::docs::{doc_add_prefix, ApiDoc};
 use actix_files as af;
@@ -11,9 +10,12 @@ use actix_web::{
     App, HttpResponse, HttpServer, Responder,
 };
 use models::site::Site;
+use sqlx::sqlite::SqliteConnectOptions;
+use sqlx::sqlite::SqliteJournalMode;
 use sqlx::{Pool, Sqlite, SqlitePool};
 use std::collections::HashMap;
 use std::fs::read_to_string;
+use std::str::FromStr;
 use tokio::sync::Mutex;
 use utoipa::OpenApi;
 
@@ -88,14 +90,23 @@ fn config_app(app: &mut ServiceConfig) {
     });
 }
 
-#[cfg(unix)]
-#[actix_web::main]
-async fn main() -> std::io::Result<()> {
+async fn init() -> SqlitePool {
     dotenvy::from_path(".env").expect("could not read .env file");
     pretty_env_logger::init();
 
     let _ = std::fs::create_dir(Config::RECORD_DIR);
-    let pool = SqlitePool::connect(&evar!("DATABASE_URL")).await.unwrap();
+    let cpt = SqliteConnectOptions::from_str("sqlite://main.db")
+        .expect("could not init sqlite connection options")
+        .journal_mode(SqliteJournalMode::Off);
+
+    SqlitePool::connect_with(cpt).await.expect("sqlite connection")
+    // let pool = SqlitePool::connect("sqlite://main.db").await.unwrap();
+}
+
+#[cfg(unix)]
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
+    let pool = init().await;
 
     let sites = sqlx::query_as! {
         Site,
@@ -103,10 +114,12 @@ async fn main() -> std::io::Result<()> {
     }
     .fetch_all(&pool)
     .await
-    .expect("could not get the sites")
-    .iter()
-    .map(|s| (s.id, s.clone()))
-    .collect::<HashMap<_, _>>();
+    .expect("could not get the sites");
+
+    let sites = sites
+        .iter()
+        .map(|site| (site.id, site.clone()))
+        .collect::<HashMap<_, _>>();
 
     let data = Data::new(AppState { sql: pool, sites: Mutex::new(sites) });
 
