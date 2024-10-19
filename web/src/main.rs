@@ -67,6 +67,7 @@ async fn rapidoc() -> impl Responder {
 fn config_app(app: &mut ServiceConfig) {
     if cfg!(debug_assertions) {
         app.service(af::Files::new("/static", "static"));
+        app.service(af::Files::new("/assets", "dist/assets"));
         app.service(af::Files::new("/record", Config::RECORD_DIR));
     }
 
@@ -114,12 +115,10 @@ async fn main() -> std::io::Result<()> {
     }
     .fetch_all(&pool)
     .await
-    .expect("could not get the sites");
-
-    let sites = sites
-        .iter()
-        .map(|site| (site.id, site.clone()))
-        .collect::<HashMap<_, _>>();
+    .expect("could not get the sites")
+    .iter()
+    .map(|s| (s.id, s.clone()))
+    .collect::<HashMap<_, _>>();
 
     let data = Data::new(AppState { sql: pool, sites: Mutex::new(sites) });
 

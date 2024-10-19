@@ -237,49 +237,39 @@ async fn live(
 ) -> Result<HttpResponse, AppErr> {
     let (res, mut session, stream) = actix_ws::handle(&rq, stream)?;
 
-    let mut stream = stream
+    let mut msg_stream = stream
         .aggregate_continuations()
         // aggregate continuation frames up to 1MiB
         .max_continuation_size(1024 * 1024);
 
-    // let _ = session.text("welcome kid").await;
+    let not_found =
+        serde_json::to_string(&AppErrNotFound("site not found")).unwrap();
 
     rt::spawn(async move {
-        while let Some(msg) = stream.next().await {
-            if let Err(e) = &msg {
-                log::info!("ws msg err: {e:?}");
-            }
-
-            // log::info!("ws msg: {msg:?}");
-            match msg.unwrap() {
+        while let Some(Ok(msg)) = msg_stream.next().await {
+            match msg {
                 AggregatedMessage::Text(txt) => {
-                    let id = txt.parse::<i64>();
-                    if id.is_err() {
-                        return;
-                    }
+                    let Ok(id) = txt.parse::<i64>() else {
+                        break;
+                    };
                     let sites = state.sites.lock().await;
-                    let site = sites.get(&id.unwrap());
-                    if site.is_none() {
-                        let _ = session
-                            .text(
-                                serde_json::to_string(&AppErrNotFound(
-                                    "site not found",
-                                ))
-                                .unwrap(),
-                            )
-                            .await;
-                        return;
-                    }
+                    let Some(site) = sites.get(&id) else {
+                        let _ = session.text(not_found.as_str()).await;
+                        continue;
+                    };
+
                     let _ = session
-                        .text(serde_json::to_string(site.unwrap()).unwrap())
+                        .text(serde_json::to_string(site).unwrap())
                         .await;
                 }
                 AggregatedMessage::Ping(bytes) => {
                     let _ = session.pong(&bytes).await;
                 }
-                _ => {}
+                _ => break,
             }
         }
+
+        let _ = session.clone().close(None).await;
     });
 
     Ok(res)
