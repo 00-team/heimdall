@@ -233,7 +233,7 @@ async fn message_list(
 /// live
 #[get("/live/")]
 async fn live(
-    rq: HttpRequest, stream: web::Payload, state: Data<AppState>,
+    _: User, rq: HttpRequest, stream: web::Payload, state: Data<AppState>,
 ) -> Result<HttpResponse, AppErr> {
     let (res, mut session, stream) = actix_ws::handle(&rq, stream)?;
 
