@@ -2,7 +2,6 @@ use std::{
     collections::HashMap,
     env,
     fs::Permissions,
-    io::ErrorKind,
     os::unix::{fs::PermissionsExt, net::UnixDatagram},
     time::Instant,
 };
@@ -47,6 +46,7 @@ fn main() -> std::io::Result<()> {
     #[cfg(debug_assertions)]
     dotenvy::from_path(".env").expect("could not read .env file");
 
+    // let sock_path = "/tmp/heimdall.dog.sock";
     let sock_path = format!(
         "/usr/share/nginx/socks/heimdall.dog.{}.sock",
         evar!("HEIMDALL_SITE")
@@ -55,7 +55,7 @@ fn main() -> std::io::Result<()> {
     let _ = std::fs::remove_file(&sock_path);
     let server = UnixDatagram::bind(&sock_path)?;
     std::fs::set_permissions(&sock_path, Permissions::from_mode(0o777))?;
-    server.set_nonblocking(true)?;
+    // server.set_nonblocking(true)?;
     let mut buf = vec![0u8; 512];
     let mut dump = Dump::default();
     let mut latest_request = Instant::now();
@@ -80,8 +80,8 @@ fn main() -> std::io::Result<()> {
 
         let size = match server.recv(buf.as_mut_slice()) {
             Ok(s) => s,
-            Err(e) if e.kind() == ErrorKind::WouldBlock => continue,
-            _ => unreachable!(),
+            Err(e) => panic!("server recv error: {e}"), // Err(e) if e.kind() == ErrorKind::WouldBlock => continue,
+                                                        // _ => unreachable!(),
         };
         match serde_json::from_slice::<Message>(&buf[24..size]) {
             Ok(msg) => {
