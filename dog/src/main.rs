@@ -3,7 +3,7 @@ use std::{
     env,
     fs::Permissions,
     os::unix::{fs::PermissionsExt, net::UnixDatagram},
-    time::Instant,
+    time::{Duration, Instant},
 };
 
 use serde::Serialize;
@@ -46,6 +46,27 @@ fn main() -> std::io::Result<()> {
     #[cfg(debug_assertions)]
     dotenvy::from_path(".env").expect("could not read .env file");
 
+    std::thread::spawn(|| {
+        let client = client_init();
+
+        loop {
+            std::thread::sleep(Duration::from_secs(60));
+
+            let Ok(output) = std::process::Command::new("systemctl")
+                .args(["is-active", &evar!("HEIMDALL_SERVICE")])
+                .output()
+            else {
+                continue;
+            };
+
+            if output.stdout == b"active" {
+                client.post(API_PING).body("").send().unwrap();
+            }
+
+            continue;
+        }
+    });
+
     // let sock_path = "/tmp/heimdall.dog.sock";
     let sock_path = format!(
         "/usr/share/nginx/socks/heimdall.dog.{}.sock",
@@ -59,7 +80,6 @@ fn main() -> std::io::Result<()> {
     let mut buf = vec![0u8; 512];
     let mut dump = Dump::default();
     let mut latest_request = Instant::now();
-    let mut latest_ping = Instant::now();
 
     let client = client_init();
 
@@ -73,15 +93,12 @@ fn main() -> std::io::Result<()> {
             latest_request = Instant::now();
         }
 
-        if latest_ping.elapsed().as_secs() >= 60 {
-            client.post(API_PING).body("").send().unwrap();
-            latest_ping = Instant::now();
-        }
-
         let size = match server.recv(buf.as_mut_slice()) {
             Ok(s) => s,
-            Err(e) => panic!("server recv error: {e}"), // Err(e) if e.kind() == ErrorKind::WouldBlock => continue,
-                                                        // _ => unreachable!(),
+            Err(e) => {
+                println!("server recv error: {e}");
+                continue;
+            }
         };
         match serde_json::from_slice::<Message>(&buf[24..size]) {
             Ok(msg) => {
