@@ -10,6 +10,15 @@ const SOCKET_STATUS = {
     online: ['Online', 'var(--green)', 'var(--red)'],
 } as const
 
+const ORDER: number[] = JSON.parse(localStorage.getItem('order') || '[]') || []
+
+function order_get(id: number) {
+    for (let i = 0; i < ORDER.length; i++) {
+        if (ORDER[i] == id) return i
+    }
+    return 999
+}
+
 export default () => {
     type State = {
         sites: { [id: string]: SiteModel }
@@ -163,113 +172,124 @@ export default () => {
                 <span>{state.timer}s</span>
             </div>
             <div class='site-list'>
-                {Object.values(state.sites).map(site => (
-                    <div
-                        class='site'
-                        classList={{
-                            offline: state.now - site.latest_ping > 120,
-                        }}
-                    >
-                        <div class='site-info'>
-                            <span>id | name:</span>
-                            <span>
-                                {site.id} | {site.name}
-                            </span>
-                            <span>online:</span>
-                            <span>{site.online ? '✅' : '❌'}</span>
-                            <span>date:</span>
-                            <span>{fmt_timestamp(site.timestamp)}</span>
-                            <span>latest request:</span>
-                            <span>
-                                {fmt_timeago(state.now - site.latest_request)}
-                            </span>
-                            <span>latest ping:</span>
-                            <span>
-                                {fmt_timeago(state.now - site.latest_ping)}
-                            </span>
-                            <span>count:</span>
-                            <span>{site.total_requests.toLocaleString()}</span>
-                            <span>time:</span>
-                            <div class='request-time'>
-                                <span>{site.requests_min_time}ms</span>
-                                <span class='spacer'>|</span>
+                {Object.values(state.sites)
+                    .sort((a, b) => order_get(a.id) - order_get(b.id))
+                    .map(site => (
+                        <div
+                            class='site'
+                            classList={{
+                                offline: state.now - site.latest_ping > 120,
+                            }}
+                        >
+                            <div class='site-info'>
+                                <span>id | name:</span>
                                 <span>
-                                    <Show
-                                        when={
-                                            site.total_requests != 0 &&
-                                            site.total_requests_time != 0
-                                        }
-                                        fallback={'0ms'}
-                                    >
-                                        {
-                                            ~~(
-                                                site.total_requests_time /
-                                                site.total_requests
-                                            )
-                                        }
-                                        ms
-                                    </Show>
+                                    {site.id} | {site.name} |{' '}
+                                    {site.online ? '✅' : '�'}
                                 </span>
-                                <span class='spacer'>|</span>
-                                <span>{site.requests_max_time}ms</span>
+                                <span>init:</span>
+                                <span>{fmt_timestamp(site.timestamp)}</span>
+                                <span>request / ping:</span>
+                                <div class='with-space'>
+                                    <span>
+                                        {fmt_timeago(
+                                            state.now - site.latest_request
+                                        )}
+                                    </span>
+                                    <span class='spacer'>|</span>
+                                    <span>
+                                        {fmt_timeago(
+                                            state.now - site.latest_ping
+                                        )}
+                                    </span>
+                                </div>
+                                <span>time / count:</span>
+                                <div class='with-space'>
+                                    <span>{site.requests_min_time}ms</span>
+                                    <span class='spacer'>|</span>
+                                    <span>
+                                        <Show
+                                            when={
+                                                site.total_requests != 0 &&
+                                                site.total_requests_time != 0
+                                            }
+                                            fallback={'0ms'}
+                                        >
+                                            {
+                                                ~~(
+                                                    site.total_requests_time /
+                                                    site.total_requests
+                                                )
+                                            }
+                                            ms
+                                        </Show>
+                                    </span>
+                                    <span class='spacer'>|</span>
+                                    <span>{site.requests_max_time}ms</span>
+                                    <span class='spacer'>/</span>
+                                    <span>
+                                        {site.total_requests.toLocaleString()}
+                                    </span>
+                                </div>
                             </div>
-                        </div>
-                        <div class='line' />
-                        <table class='site-status-table'>
-                            <thead>
-                                <tr>
-                                    <th>code</th>
-                                    <th>min</th>
-                                    <th>avg</th>
-                                    <th>max</th>
-                                    <th>count</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {Object.values(site.status).map(s => (
-                                    <tr>
-                                        <td>{s.code}</td>
-                                        <td>{s.min_time}ms</td>
-                                        <td>{~~(s.total_time / s.count)}ms</td>
-                                        <td>{s.max_time}ms</td>
-                                        <td>{s.count}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                        <Show when={state.messages[site.id]}>
                             <div class='line' />
-                            <div class='site-messages'>
-                                {state.messages[site.id].map(msg => (
-                                    <div class='message'>
-                                        <span class='tag'>{msg.tag}</span>
-                                        <p>
-                                            {msg.text
-                                                .split('\n')
-                                                .map((l, i, a) => (
-                                                    <>
-                                                        {l}
-                                                        {i < a.length - 1 && (
-                                                            <br />
-                                                        )}
-                                                    </>
-                                                ))}
-                                        </p>
-                                        <span class='timestamp'>
-                                            {fmt_timeago(
-                                                state.now - msg.timestamp
-                                            )}
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                        </Show>
-                        {/*<div class='line' />
+                            <table class='site-status-table'>
+                                <thead>
+                                    <tr>
+                                        <th>code</th>
+                                        <th>min</th>
+                                        <th>avg</th>
+                                        <th>max</th>
+                                        <th>count</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {Object.values(site.status).map(s => (
+                                        <tr>
+                                            <td>{s.code}</td>
+                                            <td>{s.min_time}ms</td>
+                                            <td>
+                                                {~~(s.total_time / s.count)}ms
+                                            </td>
+                                            <td>{s.max_time}ms</td>
+                                            <td>{s.count}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                            <Show when={state.messages[site.id]}>
+                                <div class='line' />
+                                <div class='site-messages'>
+                                    {state.messages[site.id].map(msg => (
+                                        <div class='message'>
+                                            <span class='tag'>{msg.tag}</span>
+                                            <p>
+                                                {msg.text
+                                                    .split('\n')
+                                                    .map((l, i, a) => (
+                                                        <>
+                                                            {l}
+                                                            {i <
+                                                                a.length -
+                                                                    1 && <br />}
+                                                        </>
+                                                    ))}
+                                            </p>
+                                            <span class='timestamp'>
+                                                {fmt_timeago(
+                                                    state.now - msg.timestamp
+                                                )}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </Show>
+                            {/*<div class='line' />
                         <div class='site-actions'>
                             <button class='styled'>Site</button>
                         </div>*/}
-                    </div>
-                ))}
+                        </div>
+                    ))}
             </div>
         </div>
     )

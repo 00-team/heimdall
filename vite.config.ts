@@ -4,6 +4,9 @@ import solidPlugin from 'vite-plugin-solid'
 
 import tsconfigPaths from 'vite-tsconfig-paths'
 
+let target = 'http://0.0.0.0:7000'
+// let target = 'https://heimdall.00-team.org'
+
 export default defineConfig(env => {
     let watch: WatcherOptions | null = null
     if (env.mode == 'development') {
@@ -21,15 +24,15 @@ export default defineConfig(env => {
             port: 8000,
             proxy: {
                 '/api/': {
-                    target: 'http://0.0.0.0:7000',
+                    target,
                     changeOrigin: true,
                 },
                 '/record/': {
-                    target: 'http://0.0.0.0:7000',
+                    target,
                     changeOrigin: true,
                 },
                 '/static/': {
-                    target: 'http://0.0.0.0:7000',
+                    target,
                     changeOrigin: true,
                 },
             },
