@@ -13,7 +13,7 @@ use crate::{utils, AppState};
 #[derive(OpenApi)]
 #[openapi(
     tags((name = "admin::sites")),
-    paths(add, update, del),
+    paths(add, update, reset, del),
     components(schemas(Site, SitesAddBody, SitesUpdateBody)),
     servers((url = "/sites")),
     modifiers(&UpdatePaths)
@@ -101,6 +101,37 @@ async fn update(
 }
 
 #[utoipa::path(
+    patch,
+    params(("site_id" = i64, Path, example = 1)),
+    responses((status = 200, body = Site))
+)]
+/// Reset
+#[patch("/{site_id}/reset/")]
+async fn reset(_: Admin, site: Site, state: Data<AppState>) -> Response<Site> {
+    let mut site = site;
+
+    site.total_requests = 0;
+    site.total_requests_time = 0;
+    site.requests_max_time = 0;
+    site.requests_min_time = 0;
+    site.status.0.clear();
+
+    sqlx::query! {
+        r##"update sites set total_requests = 0, total_requests_time = 0,
+        requests_max_time = 0, requests_min_time = 0, status = "{}" where id = ?"##,
+        site.id
+    }
+    .execute(&state.sql)
+    .await?;
+
+    let mut sites = state.sites.lock().await;
+    let state_site = sites.get_mut(&site.id).expect("unreachable");
+    state_site.clone_from(&site);
+
+    Ok(Json(site))
+}
+
+#[utoipa::path(
     delete,
     params(("site_id" = i64, Path, example = 1)),
     responses((status = 200, body = Site))
@@ -124,5 +155,9 @@ async fn del(
 }
 
 pub fn router() -> Scope {
-    Scope::new("/sites").service(add).service(update).service(del)
+    Scope::new("/sites")
+        .service(add)
+        .service(update)
+        .service(reset)
+        .service(del)
 }
