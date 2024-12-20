@@ -80,7 +80,9 @@ fn main() -> std::io::Result<()> {
             };
 
             if output.stdout == b"active\n" {
-                client.post(API_PING).body("").send().unwrap();
+                if let Err(e) = client.post(API_PING).body("").send() {
+                    println!("could not send ping: {e:#?}");
+                };
             }
 
             continue;
