@@ -107,7 +107,13 @@ fn main() -> std::io::Result<()> {
 
     loop {
         if latest_request.elapsed().as_secs() >= 10 && dump.total != 0 {
-            let res = client.post(API_DUMP).json(&dump).send().unwrap();
+            let res = match client.post(API_DUMP).json(&dump).send() {
+                Ok(v) => v,
+                Err(e) => {
+                    println!("could not send dump request: {e:#?}");
+                    continue;
+                }
+            };
             if res.status() != reqwest::StatusCode::OK {
                 println!("err: {:?}", res.json::<serde_json::Value>());
             }
