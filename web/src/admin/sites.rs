@@ -115,11 +115,13 @@ async fn reset(_: Admin, site: Site, state: Data<AppState>) -> Response<Site> {
     site.requests_max_time = 0;
     site.requests_min_time = 0;
     site.status.0.clear();
+    site.timestamp = utils::now();
 
     sqlx::query! {
         r##"update sites set total_requests = 0, total_requests_time = 0,
-        requests_max_time = 0, requests_min_time = 0, status = "{}" where id = ?"##,
-        site.id
+        requests_max_time = 0, requests_min_time = 0, status = "{}",
+        timestamp = ? where id = ?"##,
+        site.timestamp, site.id
     }
     .execute(&state.sql)
     .await?;

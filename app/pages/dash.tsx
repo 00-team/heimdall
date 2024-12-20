@@ -187,7 +187,7 @@ export default () => {
                                     {site.id} | {site.name} |{' '}
                                     {site.online ? '✅' : '�'}
                                 </span>
-                                <span>init:</span>
+                                <span>from:</span>
                                 <span>{fmt_timestamp(site.timestamp)}</span>
                                 <span>request / ping:</span>
                                 <div class='with-space'>
