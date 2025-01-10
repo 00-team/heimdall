@@ -1,6 +1,9 @@
 #[derive(Debug)]
 /// Main Config
-pub struct Config {}
+pub struct Config {
+    pub bot_token: String,
+    pub group_id: String,
+}
 
 macro_rules! evar {
     ($name:literal) => {
@@ -20,8 +23,11 @@ impl Config {
         b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.";
 }
 
-// use std::sync::OnceLock;
-// pub fn config() -> &'static Config {
-//     static STATE: OnceLock<Config> = OnceLock::new();
-//     STATE.get_or_init(|| Config {})
-// }
+use std::sync::OnceLock;
+pub fn config() -> &'static Config {
+    static STATE: OnceLock<Config> = OnceLock::new();
+    STATE.get_or_init(|| Config {
+        bot_token: evar!("TELOXIDE_TOKEN"),
+        group_id: evar!("TELOXIDE_GROUP_ID"),
+    })
+}

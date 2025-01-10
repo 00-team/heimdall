@@ -186,7 +186,13 @@ async fn message_add(
     tag.cut_off(255);
 
     let timestamp = utils::now();
-    let mut msg = SiteMessage { id: 0, timestamp, text, tag, site: site.id };
+    let mut msg = SiteMessage {
+        id: 0,
+        timestamp,
+        text: text.clone(),
+        tag: tag.clone(),
+        site: site.id,
+    };
     site.latest_message_timestamp = msg.timestamp;
 
     let result = sqlx::query! {
@@ -204,6 +210,12 @@ async fn message_add(
     .await?;
 
     msg.id = result.last_insert_rowid();
+
+    utils::send_message(&format!(
+        "site: {}\ntag: {}\n\n{}",
+        site.name, tag, text
+    ))
+    .await;
 
     Ok(Json(msg))
 }

@@ -12,6 +12,7 @@ serde = "1.0.210"
 serde_json = "1.0.128"
 chrono = { version = "0.4.38", features = ["serde"] }
 utoipa = { version = "4.2.3", features = ["actix_extras", "debug"] }
+awc = { version = "3.4", features = ["openssl"] }
 actix-http = "3.9.0"
 actix-web = "4.9.0"
 actix-ws = "0.3.0"
