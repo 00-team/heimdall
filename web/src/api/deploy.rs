@@ -39,7 +39,7 @@ async fn list(
     let offset = q.page * 32;
     let deploy = sqlx::query_as! {
         Deploy,
-        "select * from deploys limit 32 offset ?",
+        "select * from deploys order by id desc limit 32 offset ?",
         offset
     }
     .fetch_all(&state.sql)
@@ -131,8 +131,6 @@ async fn add(
         return Err(not_found!("repo not found"));
     };
 
-    log::info!("pat: {path:?}");
-
     if config.deploy_key != pass {
         return Err(forbidden!("invalid password"));
     }
@@ -148,9 +146,6 @@ async fn add(
     let running = deploys.iter().find(|d| d.status == DeployStatus::Running);
     let pending =
         deploys.iter().cloned().find(|d| d.status == DeployStatus::Pending);
-
-    log::info!("running: {running:?}");
-    log::info!("pending: {pending:?}");
 
     if pending.is_some() && running.is_some() {
         return Ok(HttpResponse::Ok().finish());
