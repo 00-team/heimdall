@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
-use actix_web::web::{Data, Json, Path, Query};
+use actix_http::HttpMessage;
+use actix_web::web::{Data, Bytes, Json, Path, Query};
 use actix_web::{get, post, FromRequest, HttpRequest, HttpResponse, Scope};
 use serde::Deserialize;
 use sqlx::SqlitePool;
@@ -162,11 +163,15 @@ async fn add(
             };
 
             let event = match event {
-                "push" => match Json::<GithubPushEvent>::extract(&rq).await {
-                    Ok(v) => v,
-                    Err(e) => {
-                        log::error!("json error: {e:#?}");
-                        return Err(bad_request!("invalid body"));
+                "push" => {
+                    let data = Bytes::extract(&rq).await;
+                    log::info!("data: {data:#?}");
+                    match Json::<GithubPushEvent>::extract(&rq).await {
+                        Ok(v) => v,
+                        Err(e) => {
+                            log::error!("json error: {e:#?}");
+                            return Err(bad_request!("invalid body"));
+                        }
                     }
                 },
                 "ping" => {
