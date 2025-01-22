@@ -153,20 +153,26 @@ async fn add(
 
     let sender = match actor.as_str() {
         "github" => {
-            log::info!("github rq: {rq:#?}");
-            log::info!("github headers: {:#?}", rq.headers());
+            let Some(event) = rq
+                .headers()
+                .get("X-GitHub-Event")
+                .and_then(|v| v.to_str().ok())
+            else {
+                return Err(bad_request!("no event was found"));
+            };
 
-            if !matches!(
-                rq.headers().get("X-GitHub-Event").map(|v| v.to_str()),
-                Some(Ok("push"))
-            ) {
-                log::info!("github bad headers");
-                return Err(bad_request!("bad github event. only push"));
-            }
-
-            let Ok(event) = Json::<GithubPushEvent>::extract(&rq).await else {
-                log::info!("extract failed");
-                return Err(bad_request!("invalid body"));
+            let event = match event {
+                "push" => {
+                    let Ok(event) = Json::<GithubPushEvent>::extract(&rq).await
+                    else {
+                        return Err(bad_request!("invalid body"));
+                    };
+                    event
+                }
+                "ping" => {
+                    return Ok(HttpResponse::Ok().finish());
+                }
+                _ => return Err(bad_request!("unknown event")),
             };
 
             let Some(commit) = event
