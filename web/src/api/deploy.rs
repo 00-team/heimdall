@@ -162,13 +162,13 @@ async fn add(
             };
 
             let event = match event {
-                "push" => {
-                    let Ok(event) = Json::<GithubPushEvent>::extract(&rq).await
-                    else {
+                "push" => match Json::<GithubPushEvent>::extract(&rq).await {
+                    Ok(v) => v,
+                    Err(e) => {
+                        log::error!("json error: {e:#?}");
                         return Err(bad_request!("invalid body"));
-                    };
-                    event
-                }
+                    }
+                },
                 "ping" => {
                     return Ok(HttpResponse::Ok().finish());
                 }
