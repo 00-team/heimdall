@@ -5,5 +5,7 @@ create table if not exists deploys (
     sender text, -- 007, sadra, ...
     begin integer not null default 0,
     finish integer not null default 0,
-    status integer not null default 0 -- pending, running, failed, success
+    status integer not null default 0, -- pending, running, failed, success
+    stdout text,
+    stderr text
 );

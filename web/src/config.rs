@@ -35,7 +35,8 @@ pub fn config() -> &'static Config {
         deploy_key: evar!("DEPLOY_KEY"),
         deploy_repo: HashMap::from([(
             "simurgh",
-            "/x/simurgh/config/deploy.sh".into(),
+            // "/x/simurgh/config/deploy.sh".into(),
+            "/home/i007c/projects/00-team/heimdall/test.sh".into(),
         )]),
     })
 }

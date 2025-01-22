@@ -20,4 +20,6 @@ pub struct Deploy {
     pub begin: i64,
     pub finish: i64,
     pub status: DeployStatus,
+    pub stdout: Option<String>,
+    pub stderr: Option<String>,
 }

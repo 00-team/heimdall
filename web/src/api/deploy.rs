@@ -1,6 +1,9 @@
+use std::path::PathBuf;
+
 use actix_web::web::{Data, Json, Path, Query};
 use actix_web::{get, post, FromRequest, HttpRequest, HttpResponse, Scope};
 use serde::Deserialize;
+use sqlx::SqlitePool;
 use utoipa::{OpenApi, ToSchema};
 
 use crate::config::config;
@@ -61,11 +64,54 @@ struct GithubPushEvent {
     commits: Vec<GithubPushEventCommit>,
 }
 
+async fn do_deploy(pool: SqlitePool, path: PathBuf, id: i64) {
+    let now = utils::now();
+    let _ = sqlx::query! {
+        "update deploys set begin = ?, status = ? where id = ?",
+        now, DeployStatus::Running, id
+    }
+    .execute(&pool)
+    .await;
+
+    let res = tokio::process::Command::new(path).output().await;
+    let now = utils::now();
+
+    let (status, stdout, stderr) = match res {
+        Ok(v) => (
+            // v.status;
+            DeployStatus::Success,
+            Some(String::from_utf8(v.stdout).unwrap_or_default()),
+            Some(String::from_utf8(v.stderr).unwrap_or_default()),
+        ),
+        Err(e) => (DeployStatus::Failed, None, Some(e.to_string())),
+    };
+
+    let _ = sqlx::query! {
+        "update deploys set finish = ?, stdout = ?, stderr = ?, status = ? where id = ?",
+        now, stdout, stderr, status, id
+    }
+    .execute(&pool)
+    .await;
+
+    let pending = sqlx::query_as! {
+        Deploy,
+        "select * from deploys where status = ? limit 1",
+        DeployStatus::Pending
+    }
+    .fetch_optional(&pool)
+    .await;
+
+    let Ok(Some(pending)) = pending else { return };
+    if let Some(path) = config().deploy_repo.get(pending.repo.as_str()) {
+        Box::pin(do_deploy(pool, path.clone(), pending.id)).await;
+    }
+}
+
 #[utoipa::path(
     post,
     params(
         ("repo" = String, Path, example = "simurgh"),
-        ("actor" = String, Path, example = "github"),
+        ("actor" = String, Path, example = "007"),
         ("pass" = String, Path, example = "<password>"),
     ),
     responses((status = 200))
@@ -78,17 +124,38 @@ async fn add(
 ) -> Result<HttpResponse, AppErr> {
     let (repo, actor, pass) = path.into_inner();
 
-    let path = config().deploy_repo.get(repo.as_str());
+    let config = config();
+    let path = config.deploy_repo.get(repo.as_str());
 
     let Some(path) = path else {
         return Err(not_found!("repo not found"));
     };
 
-    if config().deploy_key != pass {
+    log::info!("pat: {path:?}");
+
+    if config.deploy_key != pass {
         return Err(forbidden!("invalid password"));
     }
 
-    let now = utils::now();
+    let deploys = sqlx::query_as! {
+        Deploy,
+        "select * from deploys where repo = ? and finish = 0",
+        repo,
+    }
+    .fetch_all(&state.sql)
+    .await?;
+
+    let running = deploys.iter().find(|d| d.status == DeployStatus::Running);
+    let pending =
+        deploys.iter().cloned().find(|d| d.status == DeployStatus::Pending);
+
+    log::info!("running: {running:?}");
+    log::info!("pending: {pending:?}");
+
+    if pending.is_some() && running.is_some() {
+        return Ok(HttpResponse::Ok().finish());
+    }
+
     let sender = match actor.as_str() {
         "github" => {
             if !matches!(
@@ -118,12 +185,30 @@ async fn add(
     };
 
     let id = sqlx::query! {
-        "insert into deploys(repo, actor, sender, begin, status) values(?,?,?,?,?)",
-        repo, actor, sender, now, DeployStatus::Pending
+        "insert into deploys(repo, actor, sender, status) values(?,?,?,?)",
+        repo, actor, sender, DeployStatus::Pending
     }
     .execute(&state.sql)
     .await?
     .last_insert_rowid();
+
+    if running.is_some() {
+        return Ok(HttpResponse::Ok().finish());
+    }
+
+    if let Some(d) = pending {
+        if let Some(path) = config.deploy_repo.get(d.repo.as_str()) {
+            tokio::spawn(do_deploy(state.sql.clone(), path.clone(), d.id));
+            return Ok(HttpResponse::Ok().finish());
+        } else {
+            sqlx::query! {
+                "update deploys set status = ?, stderr = 'repo not found' where id = ?",
+                DeployStatus::Failed, d.id
+            }.execute(&state.sql).await?;
+        }
+    }
+
+    tokio::spawn(do_deploy(state.sql.clone(), path.clone(), id));
 
     Ok(HttpResponse::Ok().finish())
 }
