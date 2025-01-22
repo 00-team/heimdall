@@ -6,7 +6,7 @@ pub struct Config {
     pub bot_token: String,
     pub group_id: String,
     pub deploy_key: String,
-    pub deploy_repo: HashMap<&'static str, PathBuf>,
+    pub deploy_repo: HashMap<String, PathBuf>,
 }
 
 macro_rules! evar {
@@ -29,14 +29,16 @@ impl Config {
 
 pub fn config() -> &'static Config {
     static STATE: OnceLock<Config> = OnceLock::new();
+    let deploy_repo = serde_json::from_str::<HashMap<String, String>>(
+        include_str!("../deploy_repo.json"),
+    )
+    .expect("invalid deploy_repo.json");
     STATE.get_or_init(|| Config {
         bot_token: evar!("TELOXIDE_TOKEN"),
         group_id: evar!("TELOXIDE_GROUP_ID"),
         deploy_key: evar!("DEPLOY_KEY"),
-        deploy_repo: HashMap::from([(
-            "simurgh",
-            // "/x/simurgh/config/deploy.sh".into(),
-            "/home/i007c/projects/00-team/heimdall/test.sh".into(),
-        )]),
+        deploy_repo: HashMap::from_iter(
+            deploy_repo.iter().map(|(repo, path)| (repo.clone(), path.into())),
+        ),
     })
 }

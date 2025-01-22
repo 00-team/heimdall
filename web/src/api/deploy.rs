@@ -102,7 +102,7 @@ async fn do_deploy(pool: SqlitePool, path: PathBuf, id: i64) {
     .await;
 
     let Ok(Some(pending)) = pending else { return };
-    if let Some(path) = config().deploy_repo.get(pending.repo.as_str()) {
+    if let Some(path) = config().deploy_repo.get(&pending.repo) {
         Box::pin(do_deploy(pool, path.clone(), pending.id)).await;
     }
 }
@@ -125,7 +125,7 @@ async fn add(
     let (repo, actor, pass) = path.into_inner();
 
     let config = config();
-    let path = config.deploy_repo.get(repo.as_str());
+    let path = config.deploy_repo.get(&repo);
 
     let Some(path) = path else {
         return Err(not_found!("repo not found"));
@@ -192,7 +192,7 @@ async fn add(
     }
 
     if let Some(d) = pending {
-        if let Some(path) = config.deploy_repo.get(d.repo.as_str()) {
+        if let Some(path) = config.deploy_repo.get(&d.repo) {
             tokio::spawn(do_deploy(state.sql.clone(), path.clone(), d.id));
             return Ok(HttpResponse::Ok().finish());
         } else {
