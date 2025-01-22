@@ -20,6 +20,7 @@ export type SiteModel = {
     token: string | null
     online: boolean
     latest_message_timestamp: number
+    latest_dump_timestamp: number
 }
 
 export type SiteMessageModel = {

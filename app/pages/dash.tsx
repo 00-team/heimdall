@@ -1,14 +1,21 @@
 import { SiteMessageModel, SiteModel } from 'models'
 import { fmt_timeago, fmt_timestamp, httpx } from 'shared'
-import { createEffect, onMount, Show } from 'solid-js'
+import { onMount, Show } from 'solid-js'
 import { createStore, produce } from 'solid-js/store'
 
 import './style/dash.scss'
+type LineStatus = {
+    name: string
+    color: string
+    hover: string
+}
 
-const SOCKET_STATUS = {
-    offline: ['Offline', 'var(--mc-3)', 'var(--green)'],
-    online: ['Online', 'var(--green)', 'var(--red)'],
-} as const
+const DEFAULT_INTERVAL = 10
+const LONG_INTERVAL = 1000
+const LINE_STATUS: { [k in 'offline' | 'online']: LineStatus } = {
+    offline: { name: 'Offline', color: 'var(--mc-3)', hover: 'var(--green)' },
+    online: { name: 'Online', color: 'var(--green)', hover: 'var(--red)' },
+}
 
 const ORDER: number[] = JSON.parse(localStorage.getItem('order') || '[]') || []
 
@@ -23,34 +30,33 @@ export default () => {
     type State = {
         sites: { [id: string]: SiteModel }
         messages: { [id: string]: SiteMessageModel[] }
-        socket: WebSocket | null
-        socket_status: keyof typeof SOCKET_STATUS
         timer: number
+        interval: number
         online: boolean
+        status: LineStatus
         now: number
         act(): void
     }
     const [state, setState] = createStore<State>({
         sites: {},
         messages: {},
-        socket: null,
-        socket_status: 'offline',
         online: false,
-        timer: 5,
+        get status() {
+            return this.online ? LINE_STATUS.online : LINE_STATUS.offline
+        },
+        timer: DEFAULT_INTERVAL,
+        interval: DEFAULT_INTERVAL,
         now: 0,
         act() {
-            if (!this.socket || this.socket.readyState != WebSocket.OPEN) {
-                return connect()
-            }
-
-            Object.values(state.sites)
-                .filter(site => site.online)
-                .forEach(site => state.socket.send(site.id.toString()))
+            load(0)
         },
     })
 
     onMount(() => {
-        window.onfocus = () => setState({ timer: 0 })
+        window.onfocus = () => {
+            setState({ timer: 0, interval: DEFAULT_INTERVAL })
+        }
+        window.onblur = () => setState({ interval: LONG_INTERVAL })
 
         setState(
             produce(s => {
@@ -59,7 +65,7 @@ export default () => {
                     if (!s.online) return
                     if (s.timer <= 0) {
                         s.act()
-                        s.timer = 5
+                        s.timer = s.interval
                     } else s.timer--
                 }, 1e3)
             })
@@ -78,8 +84,18 @@ export default () => {
                 setState(
                     produce(s => {
                         sites.forEach(site => {
-                            s.sites[site.id] = site
-                            load_messages(site.id)
+                            if (site.id in s.sites) {
+                                let old = s.sites[site.id]
+                                if (
+                                    old.latest_message_timestamp !=
+                                    site.latest_message_timestamp
+                                ) {
+                                    load_messages(site.id)
+                                }
+                            } else {
+                                s.sites[site.id] = site
+                                load_messages(site.id)
+                            }
                         })
                     })
                 )
@@ -104,70 +120,18 @@ export default () => {
         })
     }
 
-    function connect() {
-        let host =
-            location.protocol == 'http:'
-                ? 'ws://localhost:7000'
-                : `wss://${location.host}`
-        let socket = new WebSocket(`${host}/api/sites/live/`)
-        setState({ socket, online: true })
-    }
-
-    createEffect(() => {
-        if (state.socket == null) {
-            setState({ socket_status: 'offline' })
-            return
-        }
-
-        function onclose() {
-            setState({ socket: null, socket_status: 'offline' })
-        }
-
-        state.socket.onopen = () => {
-            setState({ socket_status: 'online' })
-        }
-        state.socket.onclose = onclose
-        state.socket.onerror = onclose
-
-        state.socket.onmessage = e => {
-            setState(
-                produce(s => {
-                    let site = JSON.parse(e.data) as SiteModel
-                    if (!site.id) return alert('err')
-                    if (
-                        s.sites[site.id].latest_message_timestamp !=
-                        site.latest_message_timestamp
-                    ) {
-                        load_messages(site.id)
-                    }
-                    s.sites[site.id] = site
-                })
-            )
-        }
-    })
-
     return (
         <div class='dash-fnd'>
             <div class='status-bar'>
                 <button
                     class='styled connection'
                     style={{
-                        '--bd': SOCKET_STATUS[state.socket_status][1],
-                        '--hv-bd': SOCKET_STATUS[state.socket_status][2],
+                        '--bd': state.status.color,
+                        '--hv-bd': state.status.hover,
                     }}
-                    onClick={() => {
-                        if (
-                            state.socket &&
-                            state.socket.readyState == WebSocket.OPEN
-                        ) {
-                            state.socket.close()
-                            setState({ socket: null, online: false })
-                        } else {
-                            connect()
-                        }
-                    }}
+                    onClick={() => setState(s => ({ online: !s.online }))}
                 >
-                    {SOCKET_STATUS[state.socket_status][0]}
+                    {state.status.name}
                 </button>
                 <span>{state.timer}s</span>
             </div>
