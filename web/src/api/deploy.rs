@@ -64,7 +64,7 @@ struct GithubPushEvent {
     commits: Vec<GithubPushEventCommit>,
 }
 
-async fn do_deploy(pool: SqlitePool, path: PathBuf, id: i64) {
+async fn do_deploy(pool: SqlitePool, repo: String, path: PathBuf, id: i64) {
     let now = utils::now();
     let _ = sqlx::query! {
         "update deploys set begin = ?, status = ? where id = ?",
@@ -95,15 +95,15 @@ async fn do_deploy(pool: SqlitePool, path: PathBuf, id: i64) {
 
     let pending = sqlx::query_as! {
         Deploy,
-        "select * from deploys where status = ? limit 1",
-        DeployStatus::Pending
+        "select * from deploys where status = ? AND repo = ? limit 1",
+        DeployStatus::Pending, repo
     }
     .fetch_optional(&pool)
     .await;
 
     let Ok(Some(pending)) = pending else { return };
     if let Some(path) = config().deploy_repo.get(&pending.repo) {
-        Box::pin(do_deploy(pool, path.clone(), pending.id)).await;
+        Box::pin(do_deploy(pool, repo, path.clone(), pending.id)).await;
     }
 }
 
@@ -193,17 +193,24 @@ async fn add(
 
     if let Some(d) = pending {
         if let Some(path) = config.deploy_repo.get(&d.repo) {
-            tokio::spawn(do_deploy(state.sql.clone(), path.clone(), d.id));
+            tokio::spawn(do_deploy(
+                state.sql.clone(),
+                d.repo,
+                path.clone(),
+                d.id,
+            ));
             return Ok(HttpResponse::Ok().finish());
-        } else {
-            sqlx::query! {
-                "update deploys set status = ?, stderr = 'repo not found' where id = ?",
-                DeployStatus::Failed, d.id
-            }.execute(&state.sql).await?;
         }
+
+        sqlx::query! {
+            "update deploys set status = ?, stderr = 'repo not found' where id = ?",
+            DeployStatus::Failed, d.id
+        }
+        .execute(&state.sql)
+        .await?;
     }
 
-    tokio::spawn(do_deploy(state.sql.clone(), path.clone(), id));
+    tokio::spawn(do_deploy(state.sql.clone(), repo, path.clone(), id));
 
     Ok(HttpResponse::Ok().finish())
 }
