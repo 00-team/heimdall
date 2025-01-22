@@ -1,8 +1,7 @@
 use std::path::PathBuf;
 
-use actix_http::HttpMessage;
-use actix_web::web::{Data, Bytes, Json, Path, Query};
-use actix_web::{get, post, FromRequest, HttpRequest, HttpResponse, Scope};
+use actix_web::web::{Bytes, Data, Json, Path, Query};
+use actix_web::{get, post, HttpRequest, HttpResponse, Scope};
 use serde::Deserialize;
 use sqlx::SqlitePool;
 use utoipa::{OpenApi, ToSchema};
@@ -120,7 +119,7 @@ async fn do_deploy(pool: SqlitePool, repo: String, path: PathBuf, id: i64) {
 /// Add
 #[post("/{repo}/{actor}/{pass}/")]
 async fn add(
-    rq: HttpRequest, path: Path<(String, String, String)>,
+    rq: HttpRequest, path: Path<(String, String, String)>, body: Bytes,
     state: Data<AppState>,
 ) -> Result<HttpResponse, AppErr> {
     let (repo, actor, pass) = path.into_inner();
@@ -164,16 +163,14 @@ async fn add(
 
             let event = match event {
                 "push" => {
-                    let data = Bytes::extract(&rq).await;
-                    log::info!("data: {data:#?}");
-                    match Json::<GithubPushEvent>::extract(&rq).await {
+                    match serde_json::from_slice::<GithubPushEvent>(&body) {
                         Ok(v) => v,
                         Err(e) => {
                             log::error!("json error: {e:#?}");
                             return Err(bad_request!("invalid body"));
                         }
                     }
-                },
+                }
                 "ping" => {
                     return Ok(HttpResponse::Ok().finish());
                 }
