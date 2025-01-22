@@ -153,14 +153,19 @@ async fn add(
 
     let sender = match actor.as_str() {
         "github" => {
+            log::info!("github rq: {rq:#?}");
+            log::info!("github headers: {:#?}", rq.headers());
+
             if !matches!(
                 rq.headers().get("X-GitHub-Event").map(|v| v.to_str()),
                 Some(Ok("push"))
             ) {
+                log::info!("github bad headers");
                 return Err(bad_request!("bad github event. only push"));
             }
 
             let Ok(event) = Json::<GithubPushEvent>::extract(&rq).await else {
+                log::info!("extract failed");
                 return Err(bad_request!("invalid body"));
             };
 
