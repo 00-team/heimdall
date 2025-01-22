@@ -36,6 +36,7 @@ pub struct Site {
     pub token: Option<String>,
     pub online: bool,
     pub latest_message_timestamp: i64,
+    pub latest_dump_timestamp: i64,
 }
 
 #[derive(Debug, Serialize, Deserialize, FromRow, ToSchema, Clone, Default)]

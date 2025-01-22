@@ -19,7 +19,8 @@ create table if not exists sites (
     status text not null default "{}", -- {"400": 100, "200": 2000}
     token text,
     online boolean not null default false,
-    latest_message_timestamp integer not null default 0
+    latest_message_timestamp integer not null default 0,
+    latest_dump_timestamp integer not null default 0
 );
 
 create table if not exists sites_messages (

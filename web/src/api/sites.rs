@@ -1,7 +1,7 @@
-use actix_web::web::{self, Data, Json, Query};
-use actix_web::{get, post, rt, HttpRequest, HttpResponse, Scope};
-use actix_ws::AggregatedMessage;
-use futures_util::StreamExt;
+use actix_web::web::{Data, Json, Query};
+use actix_web::{get, post, HttpRequest, HttpResponse, Scope};
+// use actix_ws::AggregatedMessage;
+// use futures_util::StreamExt;
 use serde::Deserialize;
 use std::collections::HashMap;
 use utoipa::{OpenApi, ToSchema};
@@ -17,7 +17,7 @@ use crate::{utils, AppState};
 #[derive(OpenApi)]
 #[openapi(
     tags((name = "api::sites")),
-    paths(list, dump, ping, live, message_add, message_list),
+    paths(list, dump, ping, message_add, message_list),
     components(schemas(
         Site, Status, SiteDumpBody, SiteMessage, SiteAddMessageBody
     )),
@@ -67,6 +67,7 @@ struct SiteDumpBody {
 async fn dump(
     rq: HttpRequest, body: Json<SiteDumpBody>, state: Data<AppState>,
 ) -> Result<HttpResponse, AppErr> {
+    let now = utils::now();
     let mut sites = state.sites.lock().await;
     let site = match Authorization::try_from(&rq)? {
         Authorization::Site { id, token } => sites
@@ -78,6 +79,7 @@ async fn dump(
     }
     .map_err(|_| AppErrNotFound("no site was found"))?;
 
+    site.latest_dump_timestamp = now;
     site.total_requests += body.total;
     site.total_requests_time += body.total_time;
     site.requests_max_time = body.max_time.max(site.requests_max_time);
@@ -105,7 +107,8 @@ async fn dump(
         requests_max_time = ?,
         requests_min_time = ?,
         latest_request = ?,
-        status = ?
+        status = ?,
+        latest_dump_timestamp = ?
         where id = ?
     ",
         site.total_requests,
@@ -114,6 +117,7 @@ async fn dump(
         site.requests_min_time,
         site.latest_request,
         site.status,
+        site.latest_dump_timestamp,
         site.id
     }
     .execute(&state.sql)
@@ -241,51 +245,54 @@ async fn message_list(
     Ok(Json(messages))
 }
 
-#[utoipa::path(get)]
-/// live
-#[get("/live/")]
-async fn live(
-    _: User, rq: HttpRequest, stream: web::Payload, state: Data<AppState>,
-) -> Result<HttpResponse, AppErr> {
-    let (res, mut session, stream) = actix_ws::handle(&rq, stream)?;
-
-    let mut msg_stream = stream
-        .aggregate_continuations()
-        // aggregate continuation frames up to 1MiB
-        .max_continuation_size(1024 * 1024);
-
-    let not_found =
-        serde_json::to_string(&AppErrNotFound("site not found")).unwrap();
-
-    rt::spawn(async move {
-        while let Some(Ok(msg)) = msg_stream.next().await {
-            match msg {
-                AggregatedMessage::Text(txt) => {
-                    let Ok(id) = txt.parse::<i64>() else {
-                        break;
-                    };
-                    let sites = state.sites.lock().await;
-                    let Some(site) = sites.get(&id) else {
-                        let _ = session.text(not_found.as_str()).await;
-                        continue;
-                    };
-
-                    let _ = session
-                        .text(serde_json::to_string(site).unwrap())
-                        .await;
-                }
-                AggregatedMessage::Ping(bytes) => {
-                    let _ = session.pong(&bytes).await;
-                }
-                _ => break,
-            }
-        }
-
-        let _ = session.clone().close(None).await;
-    });
-
-    Ok(res)
-}
+// #[utoipa::path(get)]
+// /// live
+// #[get("/live/")]
+// async fn live(
+//     _: User, rq: HttpRequest, stream: web::Payload, state: Data<AppState>,
+// ) -> Result<HttpResponse, AppErr> {
+//     let (res, mut session, stream) = actix_ws::handle(&rq, stream)?;
+//
+//     let mut msg_stream = stream
+//         .aggregate_continuations()
+//         // aggregate continuation frames up to 1MiB
+//         .max_continuation_size(1024 * 1024)
+//     ;
+//
+//     let not_found =
+//         serde_json::to_string(&AppErrNotFound("site not found")).unwrap();
+//
+//     rt::spawn(async move {
+//         while let Some(Ok(msg)) = msg_stream.next().await {
+//             // log::info!("size_hint: {:?}", session.clone().close(None).await);
+//
+//             match msg {
+//                 AggregatedMessage::Text(txt) => {
+//                     let Ok(id) = txt.parse::<i64>() else {
+//                         break;
+//                     };
+//                     let sites = state.sites.lock().await;
+//                     let Some(site) = sites.get(&id) else {
+//                         let _ = session.text(not_found.as_str()).await;
+//                         continue;
+//                     };
+//
+//                     let _ = session
+//                         .text(serde_json::to_string(site).unwrap())
+//                         .await;
+//                 }
+//                 AggregatedMessage::Ping(bytes) => {
+//                     let _ = session.pong(&bytes).await;
+//                 }
+//                 _ => break,
+//             }
+//         }
+//
+//         let _ = session.clone().close(None).await;
+//     });
+//
+//     Ok(res)
+// }
 
 pub fn router() -> Scope {
     Scope::new("/sites")
@@ -294,5 +301,4 @@ pub fn router() -> Scope {
         .service(ping)
         .service(message_add)
         .service(message_list)
-        .service(live)
 }
