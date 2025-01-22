@@ -1,4 +1,4 @@
-use super::{inner_deref, AppErr, AppErrForbidden};
+use super::{bad_auth, forbidden, inner_deref, AppErr};
 use crate::AppState;
 use actix_web::{dev::Payload, web::Data, FromRequest, HttpRequest};
 use serde::{Deserialize, Serialize};
@@ -12,14 +12,14 @@ pub enum Authorization {
 
 fn tokenizer<const N: usize>(value: Option<&str>) -> Result<[&str; N], AppErr> {
     if value.is_none() {
-        return Err(AppErrForbidden("invalid authorization value"));
+        return Err(bad_auth!("invalid authorization value"));
     }
     let result: [&str; N] = value
         .unwrap()
         .splitn(N, ':')
         .collect::<Vec<&str>>()
         .try_into()
-        .map_err(|_| AppErrForbidden("invalid authorization token"))?;
+        .map_err(|_| bad_auth!("invalid authorization token"))?;
 
     Ok(result)
 }
@@ -30,7 +30,7 @@ impl TryFrom<&str> for Authorization {
         let mut tokens = value.splitn(2, ' ');
         let key = tokens.next().map(|v| v.to_lowercase());
         if key.is_none() {
-            return Err(AppErrForbidden("auth key was not found"));
+            return Err(bad_auth!("auth key was not found"));
         }
 
         match key.unwrap().as_str() {
@@ -48,7 +48,7 @@ impl TryFrom<&str> for Authorization {
                     token: token.to_string(),
                 })
             }
-            key => Err(AppErrForbidden(&format!("unknown key in auth: {key}"))),
+            key => Err(bad_auth!(&format!("unknown key in auth: {key}"))),
         }
     }
 }
@@ -77,7 +77,7 @@ impl TryFrom<&HttpRequest> for Authorization {
             }
         }
 
-        Err(AppErrForbidden("no authorization"))
+        Err(bad_auth!("no authorization"))
     }
 }
 
@@ -111,7 +111,7 @@ impl FromRequest for User {
                     .fetch_one(&pool)
                     .await?
                 }
-                _ => return Err(AppErrForbidden("invalid auth")),
+                _ => return Err(bad_auth!("invalid auth")),
             };
 
             Ok(user)
@@ -131,7 +131,7 @@ impl FromRequest for Admin {
         Box::pin(async {
             let user = user.await?;
             if !user.admin {
-                return Err(AppErrForbidden("forbidden"));
+                return Err(forbidden!("forbidden"));
             }
 
             Ok(Admin(user))

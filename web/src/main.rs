@@ -34,6 +34,7 @@ pub struct AppState {
 #[get("/openapi.json")]
 async fn openapi() -> impl Responder {
     let mut doc = ApiDoc::openapi();
+    doc.merge(api::deploy::ApiDoc::openapi());
     doc.merge(api::user::ApiDoc::openapi());
     doc.merge(api::verification::ApiDoc::openapi());
     doc.merge(api::sites::ApiDoc::openapi());
@@ -75,6 +76,7 @@ fn config_app(app: &mut ServiceConfig) {
     app.service(
         scope("/api")
             .service(api::user::router())
+            .service(api::deploy::router())
             .service(api::verification::verification)
             .service(api::sites::router())
             .service(scope("/admin").service(admin::sites::router())),

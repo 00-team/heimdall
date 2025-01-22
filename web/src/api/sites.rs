@@ -10,7 +10,7 @@ use crate::docs::UpdatePaths;
 use crate::models::site::{SiteMessage, Status};
 use crate::models::user::{Authorization, User};
 use crate::models::{site::Site, Response};
-use crate::models::{AppErr, AppErrNotFound, ListInput};
+use crate::models::{AppErr, not_found, ListInput};
 use crate::utils::CutOff;
 use crate::{utils, AppState};
 
@@ -77,7 +77,7 @@ async fn dump(
             .ok_or(()),
         _ => Err(()),
     }
-    .map_err(|_| AppErrNotFound("no site was found"))?;
+    .map_err(|_| not_found!("no site was found"))?;
 
     site.latest_dump_timestamp = now;
     site.total_requests += body.total;
@@ -144,7 +144,7 @@ async fn ping(
             .ok_or(()),
         _ => Err(()),
     }
-    .map_err(|_| AppErrNotFound("no site was found"))?;
+    .map_err(|_| not_found!("no site was found"))?;
 
     site.latest_ping = utils::now();
 
@@ -182,7 +182,7 @@ async fn message_add(
             .ok_or(()),
         _ => Err(()),
     }
-    .map_err(|_| AppErrNotFound("no site was found"))?;
+    .map_err(|_| not_found!("no site was found"))?;
 
     let mut text = body.text.clone();
     let mut tag = body.tag.clone();

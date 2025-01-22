@@ -13,6 +13,7 @@ const Root = () => {
             <Show when={self.loged_in} fallback={<Login />}>
                 <Router>
                     <Route path='/' component={Dash} />
+                    <Route path='/deploy/' component={Dash} />
                     <Route
                         path='*path'
                         component={lazy(() => import('pages/404'))}

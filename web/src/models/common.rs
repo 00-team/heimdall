@@ -65,43 +65,43 @@ impl<T: DeserializeOwned + Default> From<String> for JsonStr<T> {
     }
 }
 
-// macro_rules! sql_enum {
-//     ( $( $vis:vis enum $name:ident { $($member:ident,)* } )* ) => {
-//         $(
-//         #[derive(PartialEq, Default, Clone, Debug, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
-//         #[serde(rename_all = "snake_case")]
-//         $vis enum $name {
-//             #[default]
-//             $($member,)*
-//         }
-//
-//         impl From<i64> for $name {
-//             fn from(value: i64) -> Self {
-//                 match value {
-//                     $(x if x == $name::$member as i64 => $name::$member,)*
-//                     _ => $name::default()
-//                 }
-//             }
-//         }
-//
-//         impl sqlx::Type<sqlx::Sqlite> for $name {
-//             fn type_info() -> sqlx::sqlite::SqliteTypeInfo {
-//                 <i64 as sqlx::Type<sqlx::Sqlite>>::type_info()
-//             }
-//         }
-//
-//         impl<'q> sqlx::Encode<'q, sqlx::Sqlite> for $name {
-//             fn encode_by_ref(
-//                 &self, buf: &mut <sqlx::Sqlite as sqlx::Database>::ArgumentBuffer<'q>,
-//             ) -> Result<sqlx::encode::IsNull, sqlx::error::BoxDynError> {
-//                 buf.push(sqlx::sqlite::SqliteArgumentValue::Int(self.clone() as i32));
-//                 Ok(sqlx::encode::IsNull::No)
-//             }
-//         }
-//         )*
-//     };
-// }
-// pub(crate) use sql_enum;
+macro_rules! sql_enum {
+    ( $( $vis:vis enum $name:ident { $($member:ident,)* } )* ) => {
+        $(
+        #[derive(PartialEq, Default, Clone, Debug, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+        #[serde(rename_all = "snake_case")]
+        $vis enum $name {
+            #[default]
+            $($member,)*
+        }
+
+        impl From<i64> for $name {
+            fn from(value: i64) -> Self {
+                match value {
+                    $(x if x == $name::$member as i64 => $name::$member,)*
+                    _ => $name::default()
+                }
+            }
+        }
+
+        impl sqlx::Type<sqlx::Sqlite> for $name {
+            fn type_info() -> sqlx::sqlite::SqliteTypeInfo {
+                <i64 as sqlx::Type<sqlx::Sqlite>>::type_info()
+            }
+        }
+
+        impl<'q> sqlx::Encode<'q, sqlx::Sqlite> for $name {
+            fn encode_by_ref(
+                &self, buf: &mut <sqlx::Sqlite as sqlx::Database>::ArgumentBuffer<'q>,
+            ) -> Result<sqlx::encode::IsNull, sqlx::error::BoxDynError> {
+                buf.push(sqlx::sqlite::SqliteArgumentValue::Int(self.clone() as i32));
+                Ok(sqlx::encode::IsNull::No)
+            }
+        }
+        )*
+    };
+}
+pub(crate) use sql_enum;
 
 macro_rules! inner_deref {
     ($parent:ident, $child:ident) => {

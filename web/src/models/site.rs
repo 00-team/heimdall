@@ -1,7 +1,7 @@
 use std::{collections::HashMap, future::Future, pin::Pin};
 
-use super::{AppErr, AppErrBadRequest, JsonStr};
-use crate::{config::Config, models::AppErrNotFound, AppState};
+use super::{bad_request, AppErr, JsonStr};
+use crate::{config::Config, models::not_found, AppState};
 use actix_http::Payload;
 use actix_web::{
     web::{Data, Path},
@@ -51,11 +51,11 @@ pub struct SiteMessage {
 impl Site {
     pub fn verify_name(name: &str) -> Result<(), AppErr> {
         if name.is_empty() || name.len() > 100 {
-            return Err(AppErrBadRequest("invalid name length > 0 && < 100"));
+            return Err(bad_request!("invalid name length > 0 && < 100"));
         }
 
         if !name.chars().all(|c| Config::SITE_NAME_ABC.contains(&(c as u8))) {
-            return Err(AppErrBadRequest("invalid name characters"));
+            return Err(bad_request!("invalid name characters"));
         }
 
         Ok(())
@@ -79,7 +79,7 @@ impl FromRequest for Site {
             if let Some(site) = sites.get(&path.await?.site_id) {
                 Ok(site.clone())
             } else {
-                Err(AppErrNotFound("no site was found"))
+                Err(not_found!("no site was found"))
             }
         })
     }

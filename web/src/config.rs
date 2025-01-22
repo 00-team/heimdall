@@ -1,8 +1,12 @@
+use std::{collections::HashMap, path::PathBuf, sync::OnceLock};
+
 #[derive(Debug)]
 /// Main Config
 pub struct Config {
     pub bot_token: String,
     pub group_id: String,
+    pub deploy_key: String,
+    pub deploy_repo: HashMap<&'static str, PathBuf>,
 }
 
 macro_rules! evar {
@@ -23,11 +27,15 @@ impl Config {
         b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.";
 }
 
-use std::sync::OnceLock;
 pub fn config() -> &'static Config {
     static STATE: OnceLock<Config> = OnceLock::new();
     STATE.get_or_init(|| Config {
         bot_token: evar!("TELOXIDE_TOKEN"),
         group_id: evar!("TELOXIDE_GROUP_ID"),
+        deploy_key: evar!("DEPLOY_KEY"),
+        deploy_repo: HashMap::from([(
+            "simurgh",
+            "/x/simurgh/config/deploy.sh".into(),
+        )]),
     })
 }

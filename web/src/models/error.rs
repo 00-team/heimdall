@@ -28,6 +28,11 @@ impl AppErr {
     pub fn default() -> Self {
         Self { status: 500, subject: "server error".to_string(), content: None }
     }
+
+    pub fn content(mut self, content: &str) -> Self {
+        self.content = Some(content.to_string());
+        self
+    }
 }
 
 impl fmt::Display for AppErr {
@@ -119,18 +124,34 @@ impl_from_err!(ToStrError);
 
 macro_rules! error_helper {
     ($name:ident, $status:ident, $subject:literal) => {
-        #[doc = concat!("Helper function that wraps any error and generates a `", stringify!($status), "` response.")]
-        #[allow(non_snake_case)]
-        pub fn $name(err: &str) -> AppErr {
-            AppErr {
-                status: StatusCode::$status.as_u16(),
-                subject: $subject.to_string(),
-                content: Some(err.to_string())
-            }
+        macro_rules! $name {
+            () => {
+                crate::models::AppErr::new(
+                    actix_web::http::StatusCode::$status.as_u16(),
+                    $subject,
+                )
+            };
+            ($content:literal) => {
+                crate::models::AppErr::new(
+                    actix_web::http::StatusCode::$status.as_u16(),
+                    $subject,
+                )
+                .content($content)
+            };
+            ($content:expr) => {
+                crate::models::AppErr::new(
+                    actix_web::http::StatusCode::$status.as_u16(),
+                    $subject,
+                )
+                .content(&($content))
+            };
         }
+        pub(crate) use $name;
     };
 }
 
-error_helper!(AppErrBadRequest, BAD_REQUEST, "bad request");
-error_helper!(AppErrForbidden, FORBIDDEN, "forbidden");
-error_helper!(AppErrNotFound, NOT_FOUND, "not found");
+error_helper!(bad_request, BAD_REQUEST, "bad request");
+error_helper!(forbidden, FORBIDDEN, "forbidden");
+error_helper!(bad_auth, FORBIDDEN, "bad auth");
+error_helper!(not_found, NOT_FOUND, "not found");
+// error_helper!(server_error, INTERNAL_SERVER_ERROR, "server error");
