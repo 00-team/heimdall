@@ -86,6 +86,7 @@ export default () => {
                         sites.forEach(site => {
                             if (site.id in s.sites) {
                                 let old = s.sites[site.id]
+                                s.sites[site.id] = site
                                 if (
                                     old.latest_message_timestamp !=
                                     site.latest_message_timestamp
