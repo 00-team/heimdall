@@ -4,8 +4,8 @@ import solidPlugin from 'vite-plugin-solid'
 
 import tsconfigPaths from 'vite-tsconfig-paths'
 
-let target = 'http://0.0.0.0:7000'
-// let target = 'https://heimdall.00-team.org'
+// let target = 'http://0.0.0.0:7000'
+let target = 'https://heimdall.00-team.org'
 
 export default defineConfig(env => {
     let watch: WatcherOptions | null = null
@@ -16,6 +16,13 @@ export default defineConfig(env => {
     }
 
     return {
+        css: {
+            preprocessorOptions: {
+                scss: {
+                    api: 'modern',
+                },
+            },
+        },
         plugins: [tsconfigPaths(), solidPlugin({ hot: false })],
         root: 'app',
         server: {

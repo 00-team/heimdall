@@ -38,3 +38,15 @@ export type UserModel = {
     token: string | null
     admin: boolean
 }
+
+export type Deploy = {
+    actor: string
+    begin: number
+    finish: number
+    id: number
+    repo: string
+    sender: string | null
+    status: 'pending' | 'running' | 'failed' | 'success'
+    stderr: string | null
+    stdout: string | null
+}

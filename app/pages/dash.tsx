@@ -4,6 +4,7 @@ import { onMount, Show } from 'solid-js'
 import { createStore, produce } from 'solid-js/store'
 
 import './style/dash.scss'
+import { A } from '@solidjs/router'
 type LineStatus = {
     name: string
     color: string
@@ -124,16 +125,19 @@ export default () => {
     return (
         <div class='dash-fnd'>
             <div class='status-bar'>
-                <button
-                    class='styled connection'
-                    style={{
-                        '--bd': state.status.color,
-                        '--hv-bd': state.status.hover,
-                    }}
-                    onClick={() => setState(s => ({ online: !s.online }))}
-                >
-                    {state.status.name}
-                </button>
+                <div>
+                    <button
+                        class='styled connection'
+                        style={{
+                            '--bd': state.status.color,
+                            '--hv-bd': state.status.hover,
+                        }}
+                        onClick={() => setState(s => ({ online: !s.online }))}
+                    >
+                        {state.status.name}
+                    </button>
+                    <A href='/deploy/'>deploy</A>
+                </div>
                 <span>{state.timer}s</span>
             </div>
             <div class='site-list'>
