@@ -55,9 +55,10 @@
     }
 
     .deploy-list {
+        --gap: 2.5rem;
         position: relative;
         display: flex;
-        gap: 3rem;
+        gap: var(--gap);
         height: 100%;
         flex-wrap: wrap;
         overflow: auto;
@@ -65,17 +66,28 @@
         justify-content: space-evenly;
 
         .deploy {
+            --color: var(--mc-3);
             font-size: 18px;
             display: flex;
             flex-direction: column;
             gap: 0.5rem;
-            border: 2px solid var(--mc-3);
+            border: 2px solid var(--color);
             border-radius: var(--radius);
-            width: 30%;
+            width: calc(100% / 3 - (var(--gap) / 3 * 2));
             min-width: 20rem;
             height: 52%;
             overflow: hidden;
             padding: 0.5rem;
+
+            &.success {
+                --color: var(--green);
+            }
+            &.failed {
+                --color: var(--red);
+            }
+            &.running {
+                --color: var(--blue);
+            }
 
             .row {
                 display: flex;
@@ -88,15 +100,7 @@
             }
 
             .status {
-                &.success {
-                    color: var(--green);
-                }
-                &.failed {
-                    color: var(--red);
-                }
-                &.running {
-                    color: var(--blue);
-                }
+                color: var(--color);
             }
 
             .std {
@@ -115,14 +119,14 @@
                     cursor: pointer;
 
                     &:hover {
-                        color: var(--mc-3);
+                        color: var(--color);
                     }
 
                     &::before,
                     &::after {
                         content: '';
                         height: 2px;
-                        background-color: var(--mc-3);
+                        background-color: var(--color);
                         width: 50%;
                     }
                 }
@@ -133,7 +137,7 @@
                     align-items: center;
 
                     button {
-                        border: 2px solid var(--mc-3);
+                        border: 2px solid var(--color);
                     }
                 }
 
@@ -148,7 +152,7 @@
                     padding: 0.5rem;
 
                     textarea {
-                        border-color: var(--mc-1);
+                        border-color: var(--color);
                     }
                 }
             }

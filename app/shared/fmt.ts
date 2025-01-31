@@ -44,6 +44,9 @@ export function fmt_duration(seconds: number): string {
     return out
 }
 
+export function fmt_timeago_ts(ts: number): string {
+    return fmt_timeago(~~(new Date().getTime() / 1e3) - ts)
+}
 export function fmt_timeago(seconds: number): string {
     if (seconds < 1) return 'now'
 

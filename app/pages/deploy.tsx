@@ -1,16 +1,18 @@
 import { A, useSearchParams } from '@solidjs/router'
 import { Deploy } from 'models'
-import { fmt_duration, fmt_timestamp, httpx } from 'shared'
+import {
+    fmt_duration,
+    fmt_timeago,
+    fmt_timeago_ts,
+    fmt_timestamp,
+    httpx,
+} from 'shared'
 import { Component, createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { createStore } from 'solid-js/store'
 
 import './style/deploy.scss'
-import {
-    ChevronLeftIcon,
-    ChevronRightIcon,
-    ExpandIcon,
-    ShirinkIcon,
-} from 'icons'
+import { ChevronLeftIcon, ChevronRightIcon } from 'icons'
+const DIV_TS = new Date().getTime() / 1e3 - 30 * 24 * 3600
 
 export default () => {
     type State = {
@@ -81,16 +83,11 @@ export default () => {
                 </Show>
 
                 {state.deploys.map(d => (
-                    <div class='deploy'>
+                    <div class='deploy' classList={{ [d.status]: true }}>
                         <div class='row'>
                             <span class='id'>{d.id}</span>
                             <span class='space'>|</span>
-                            <span
-                                class='status'
-                                classList={{ [d.status]: true }}
-                            >
-                                {d.status}
-                            </span>
+                            <span class='status'>{d.status}</span>
                         </div>
                         <div class='row'>
                             {d.sender}
@@ -99,7 +96,14 @@ export default () => {
                             <span class='space'>in</span> {d.repo}
                         </div>
                         <div class='row'>
-                            <span>{fmt_timestamp(d.begin)}</span>
+                            <Show
+                                when={DIV_TS > d.begin}
+                                fallback={
+                                    <span>{fmt_timeago_ts(d.begin)}</span>
+                                }
+                            >
+                                <span>{fmt_timestamp(d.begin)}</span>
+                            </Show>
                             <span class='space'>|</span>
                             <Show when={d.finish} fallback={'never finished'}>
                                 <span>{fmt_duration(d.finish - d.begin)}</span>
