@@ -29,10 +29,12 @@ impl Config {
 
 pub fn config() -> &'static Config {
     static STATE: OnceLock<Config> = OnceLock::new();
-    let deploy_repo = serde_json::from_str::<HashMap<String, String>>(
-        include_str!("../deploy_repo.json"),
-    )
-    .expect("invalid deploy_repo.json");
+
+    let data = std::fs::read_to_string("../deploy_repo.json")
+        .expect("reading deploy_repo.json");
+
+    let deploy_repo = serde_json::from_str::<HashMap<String, String>>(&data)
+        .expect("invalid deploy_repo.json");
     STATE.get_or_init(|| Config {
         bot_token: evar!("TELOXIDE_TOKEN"),
         group_id: evar!("TELOXIDE_GROUP_ID"),
