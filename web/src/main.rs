@@ -111,6 +111,8 @@ async fn init() -> SqlitePool {
 async fn main() -> std::io::Result<()> {
     let pool = init().await;
 
+    let _ = config::config();
+
     let sites = sqlx::query_as! {
         Site,
         "select * from sites"
