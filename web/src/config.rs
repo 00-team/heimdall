@@ -30,7 +30,7 @@ impl Config {
 pub fn config() -> &'static Config {
     static STATE: OnceLock<Config> = OnceLock::new();
 
-    let data = std::fs::read_to_string("../deploy_repo.json")
+    let data = std::fs::read_to_string("deploy_repo.json")
         .expect("reading deploy_repo.json");
 
     let deploy_repo = serde_json::from_str::<HashMap<String, String>>(&data)
