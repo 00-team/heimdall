@@ -43,6 +43,7 @@ pub async fn send_message(text: &str) {
         channel: &'static str,
         pass: String,
         text: String,
+        parse_mode: Option<String>,
     }
 
     let _ = request
@@ -50,6 +51,7 @@ pub async fn send_message(text: &str) {
             channel: "heimdall",
             pass: conf.iris_pass.clone(),
             text: text.to_string(),
+            parse_mode: None,
         })
         .await;
     // match result {
