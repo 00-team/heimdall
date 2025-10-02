@@ -3,8 +3,9 @@ use std::{collections::HashMap, path::PathBuf, sync::OnceLock};
 #[derive(Debug)]
 /// Main Config
 pub struct Config {
-    pub bot_token: String,
-    pub group_id: String,
+    // pub bot_token: String,
+    pub iris_pass: String,
+    // pub group_id: String,
     pub deploy_key: String,
     pub deploy_repo: HashMap<String, PathBuf>,
 }
@@ -36,8 +37,8 @@ pub fn config() -> &'static Config {
     let deploy_repo = serde_json::from_str::<HashMap<String, String>>(&data)
         .expect("invalid deploy_repo.json");
     STATE.get_or_init(|| Config {
-        bot_token: evar!("TELOXIDE_TOKEN"),
-        group_id: evar!("TELOXIDE_GROUP_ID"),
+        iris_pass: evar!("IRIS_PASS"),
+        // group_id: evar!("TELOXIDE_GROUP_ID"),
         deploy_key: evar!("DEPLOY_KEY"),
         deploy_repo: HashMap::from_iter(
             deploy_repo.iter().map(|(repo, path)| (repo.clone(), path.into())),

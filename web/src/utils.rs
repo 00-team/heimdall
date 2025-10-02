@@ -1,7 +1,7 @@
-use crate::models::{AppErr, bad_request};
+use crate::config;
+use crate::models::{bad_request, AppErr};
 use rand::Rng;
 use serde::Serialize;
-use crate::config;
 
 pub fn phone_validator(phone: &str) -> Result<(), AppErr> {
     if phone.len() != 11 || !phone.starts_with("09") {
@@ -32,18 +32,26 @@ pub async fn send_message(text: &str) {
 
     let client = awc::Client::new();
     let conf = config::config();
-    let url = format!(
-        "https://api.telegram.org/bot{}/sendMessage?chat_id={}&message_thread_id=438",
-        conf.bot_token, conf.group_id
-    );
-    let request = client.post(&url);
+    // let url = format!(
+    //     "https://api.telegram.org/bot{}/sendMessage?chat_id={}&message_thread_id=438",
+    //     conf.bot_token, conf.group_id
+    // );
+    let request = client.post("https://iris.00-team.org/api/abzar/send/");
 
     #[derive(Serialize, Debug)]
     struct Body {
+        channel: &'static str,
+        pass: String,
         text: String,
     }
 
-    let _ = request.send_json(&Body { text: text.to_string() }).await;
+    let _ = request
+        .send_json(&Body {
+            channel: "heimdall",
+            pass: conf.iris_pass.clone(),
+            text: text.to_string(),
+        })
+        .await;
     // match result {
     //     Ok(mut v) => {
     //         log::info!("topic: {}", topic);

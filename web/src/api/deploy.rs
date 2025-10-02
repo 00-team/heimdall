@@ -145,7 +145,7 @@ async fn add(
 
     let running = deploys.iter().find(|d| d.status == DeployStatus::Running);
     let pending =
-        deploys.iter().cloned().find(|d| d.status == DeployStatus::Pending);
+        deploys.iter().find(|d| d.status == DeployStatus::Pending).cloned();
 
     if pending.is_some() && running.is_some() {
         return Ok(HttpResponse::Ok().finish());
